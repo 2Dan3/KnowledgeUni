@@ -11,4 +11,4 @@ Searching includes language-independent input & result-matching for the supporte
 (en sr ru de fr)
 
 Tools & technologies used:
-MySQL 8.0, Java 8, Spring(boot), Thymeleaf, HTML 5, CSS 3, JS (AJAX), JQuery, Hibernate ORM, Spring Security, Docker, Neo4J, Elasticsearch.
+MySQL 8.0, Java 8, Spring(boot), Thymeleaf, HTML 5, CSS 3, JS (AJAX), JQuery, Hibernate ORM, Spring Security, Docker, Neo4J, Elasticsearch, MinIO.
