@@ -7,7 +7,7 @@ It may, as well, be used for more specific cases such as language learning, pers
 A personalized literature recommendations infrastructure, that takes into consideration similar concepts or ideas. Based on user's books marked as "read" or their predefined genre or topic preferences.
 
 Internationalized (i18n) for more comfortable UX;
-Searching includes language-independent result-matching for the supported languages.
+Searching includes language-independent input & result-matching for the supported languages.
 (en sr ru de fr)
 
 Tools & technologies used:
