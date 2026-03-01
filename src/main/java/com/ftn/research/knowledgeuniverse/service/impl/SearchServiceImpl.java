@@ -6,7 +6,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import com.ftn.research.knowledgeuniverse.exceptionhandling.exception.MalformedQueryException;
 import com.ftn.research.knowledgeuniverse.model.index.BookIndex;
 import com.ftn.research.knowledgeuniverse.service.SearchService;
-import com.ftn.research.knowledgeuniverse.util.VectorizationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.common.unit.Fuzziness;
@@ -25,10 +24,8 @@ import org.springframework.data.elasticsearch.core.query.highlight.HighlightPara
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,12 +34,14 @@ public class SearchServiceImpl implements SearchService {
 
     private final ElasticsearchOperations elasticsearchTemplate;
 
+    private final EmbeddingService embeddingService;
+
     @Override
     public Page<BookIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
 
         if (isKNN) {
             try {
-                return searchByVector(VectorizationUtil.getEmbedding(String.join(" ", keywords)));
+                return searchByVector(embeddingService.getEmbedding(String.join(" ", keywords)));
             } catch (TranslateException e) {
                 log.error("Vectorization failed", e);
                 return Page.empty();
@@ -122,7 +121,14 @@ public class SearchServiceImpl implements SearchService {
                         .build(),
                 List.of(
                         new HighlightField("content_sr"),
-                        new HighlightField("content_en")
+                        new HighlightField("content_en"),
+                        new HighlightField("content_de"),
+                        new HighlightField("content_ru"),
+                        new HighlightField("content_fr"),
+                        new HighlightField("content_es"),
+                        new HighlightField("content_it"),
+                        new HighlightField("content_pt"),
+                        new HighlightField("content_uk")
                 )
         );
     }
@@ -147,6 +153,34 @@ public class SearchServiceImpl implements SearchService {
 
             // Match on content_en
             boolBuilder.should(s -> s.match(m -> m.field("content_en")
+                    .query(token)));
+
+            // Match on content_en
+            boolBuilder.should(s -> s.match(m -> m.field("content_de")
+                    .query(token)));
+
+            // Match on content_en
+            boolBuilder.should(s -> s.match(m -> m.field("content_fr")
+                    .query(token)));
+
+            // Match on content_en
+            boolBuilder.should(s -> s.match(m -> m.field("content_ru")
+                    .query(token)));
+
+            // Match on content_en
+            boolBuilder.should(s -> s.match(m -> m.field("content_es")
+                    .query(token)));
+
+            // Match on content_en
+            boolBuilder.should(s -> s.match(m -> m.field("content_it")
+                    .query(token)));
+
+            // Match on content_en
+            boolBuilder.should(s -> s.match(m -> m.field("content_pt")
+                    .query(token)));
+
+            // Match on content_en
+            boolBuilder.should(s -> s.match(m -> m.field("content_uk")
                     .query(token)));
         }
 
@@ -214,6 +248,27 @@ public class SearchServiceImpl implements SearchService {
                 }
                 if (highlight.containsKey("content_en")) {
                     book.setContentEn(highlight.get("content_en").get(0));
+                }
+                if (highlight.containsKey("content_de")) {
+                    book.setContentSr(highlight.get("content_de").get(0));
+                }
+                if (highlight.containsKey("content_ru")) {
+                    book.setContentSr(highlight.get("content_ru").get(0));
+                }
+                if (highlight.containsKey("content_fr")) {
+                    book.setContentSr(highlight.get("content_fr").get(0));
+                }
+                if (highlight.containsKey("content_es")) {
+                    book.setContentSr(highlight.get("content_es").get(0));
+                }
+                if (highlight.containsKey("content_it")) {
+                    book.setContentSr(highlight.get("content_it").get(0));
+                }
+                if (highlight.containsKey("content_pt")) {
+                    book.setContentSr(highlight.get("content_pt").get(0));
+                }
+                if (highlight.containsKey("content_uk")) {
+                    book.setContentSr(highlight.get("content_uk").get(0));
                 }
             }
 

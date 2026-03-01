@@ -1,0 +1,42 @@
+# Maven Stage 1: Build
+FROM maven:3.9.2-eclipse-temurin-17 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Maven Stage 2: Run
+FROM eclipse-temurin:17-jdk-jammy
+WORKDIR /app
+COPY --from=build /app/target/knowledgeuniverse-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE 8080
+CMD ["java", "-jar", "app.jar"]
+
+
+# OR - all-at-once 1-stage build (results in a much larger image)
+
+
+# Start from OpenJDK 17
+#FROM eclipse-temurin:17-jdk-jammy
+
+# Set working directory
+#WORKDIR /app
+
+# Copy Maven files
+#COPY pom.xml .
+#COPY mvnw .
+#COPY .mvn .mvn
+
+# Copy source code
+#COPY src src
+
+# Install Maven
+#RUN apt-get update && \
+#    apt-get install -y maven && \
+#    mvn -B clean package -DskipTests
+
+# Expose port
+#EXPOSE 8080
+
+# Run the Spring Boot app
+#CMD ["java", "-jar", "target/knowledgeuniverse-0.0.1-SNAPSHOT.jar"]

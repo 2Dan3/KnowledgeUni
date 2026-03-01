@@ -9,7 +9,7 @@ import com.ftn.research.knowledgeuniverse.repository.entity.BookRepository;
 import com.ftn.research.knowledgeuniverse.repository.index.BookIndexRepository;
 import com.ftn.research.knowledgeuniverse.service.FileService;
 import com.ftn.research.knowledgeuniverse.service.IndexingService;
-import com.ftn.research.knowledgeuniverse.util.VectorizationUtil;
+import com.ftn.research.knowledgeuniverse.service.impl.EmbeddingService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +39,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     private final LanguageDetector languageDetector;
 
+    private final EmbeddingService embeddingService;
 
     @Override
     @Transactional
@@ -50,13 +51,30 @@ public class IndexingServiceImpl implements IndexingService {
         newIndex.setTitle(title);
         newEntity.setTitle(title);
 
-//        TODO if else field expansion here and in index for all supported langs (sr, en, de, fr, ru, be, uk, es, it, mk)
+//        hr/sr, en, de, fr, ru, uk, es, it, pt)
         var documentContent = extractDocumentContent(documentFile);
         if (detectLanguage(documentContent).equals("SR")) {
             newIndex.setContentSr(documentContent);
-        } else {
+        }else if (detectLanguage(documentContent).equals("RU")) {
+            newIndex.setContentRu(documentContent);
+        }else if (detectLanguage(documentContent).equals("DE")) {
+            newIndex.setContentDe(documentContent);
+        }else if (detectLanguage(documentContent).equals("FR")) {
+            newIndex.setContentFr(documentContent);
+        }else if (detectLanguage(documentContent).equals("IT")) {
+            newIndex.setContentIt(documentContent);
+        }else if (detectLanguage(documentContent).equals("ES")) {
+            newIndex.setContentEs(documentContent);
+        }else if (detectLanguage(documentContent).equals("PT")) {
+            newIndex.setContentPt(documentContent);
+        }else if (detectLanguage(documentContent).equals("UK")) {
+            newIndex.setContentUk(documentContent);
+        }
+//        TODO
+        else {
             newIndex.setContentEn(documentContent);
         }
+
         newEntity.setContentInNativeLang(documentContent);
 
         var serverFilename = fileService.store(documentFile, UUID.randomUUID().toString());
@@ -67,7 +85,7 @@ public class IndexingServiceImpl implements IndexingService {
         var savedEntity = bookRepository.save(newEntity);
 
         try {
-            newIndex.setVectorizedContent(VectorizationUtil.getEmbedding(title));
+            newIndex.setVectorizedContent(embeddingService.getEmbedding(title));
         } catch (TranslateException e) {
 //            log.error("Could not calculate vector representation for document with ID: {}",
 //                savedEntity.getISBN();
