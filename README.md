@@ -11,10 +11,4 @@ Searching includes language-independent input & result-matching for the supporte
 (en sr ru de fr es it pt uk)
 
 Tools & technologies used:
-MySQL 8.0, Java 8, Spring(boot), Thymeleaf, HTML 5, CSS 3, JS (AJAX), JQuery, Hibernate ORM, Spring Security, Docker, Neo4J, Elasticsearch, MinIO.
-
------------
-Execute into ElasticSearch docker container CLI at runtime, then restart the ES container:
-
-1) Add elasticsearch-plugin install analysis-icu
-2) sudo bin/elasticsearch-plugin install analysis-ukrainian
+MySQL 8.0, Java, Spring(boot), Thymeleaf, HTML 5, CSS 3, JS (AJAX), JQuery, Hibernate ORM, Spring Security, Docker, Neo4J, Elasticsearch, MinIO, Semantic Embedding LLM.

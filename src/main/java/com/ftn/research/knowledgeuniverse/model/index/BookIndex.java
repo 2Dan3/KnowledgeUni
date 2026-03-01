@@ -11,7 +11,7 @@ import org.springframework.data.elasticsearch.annotations.Setting;
 @Data
 @NoArgsConstructor
 @Document(indexName = "book_index")
-@Setting(settingPath = "/configuration/serbian-analyzer-config.json")
+@Setting(settingPath = "/configuration/multilang-analyzer-config.json")
 public class BookIndex {
 
     @Id
@@ -34,6 +34,8 @@ public class BookIndex {
 
     @Field(type = FieldType.Text, store = true, name = "content_uk", analyzer = "ukrainian", searchAnalyzer = "ukrainian")
     private String contentUk;
+//    @Field(type = FieldType.Text, store = true, name = "content_uk_latin", analyzer = "ukrainian_custom", searchAnalyzer = "ukrainian_custom")
+//    private String contentUkLatin;
 
     @Field(type = FieldType.Text, store = true, name = "content_it", analyzer = "italian", searchAnalyzer = "italian")
     private String contentIt;

@@ -250,25 +250,25 @@ public class SearchServiceImpl implements SearchService {
                     book.setContentEn(highlight.get("content_en").get(0));
                 }
                 if (highlight.containsKey("content_de")) {
-                    book.setContentSr(highlight.get("content_de").get(0));
+                    book.setContentDe(highlight.get("content_de").get(0));
                 }
                 if (highlight.containsKey("content_ru")) {
-                    book.setContentSr(highlight.get("content_ru").get(0));
+                    book.setContentRu(highlight.get("content_ru").get(0));
                 }
                 if (highlight.containsKey("content_fr")) {
-                    book.setContentSr(highlight.get("content_fr").get(0));
+                    book.setContentFr(highlight.get("content_fr").get(0));
                 }
                 if (highlight.containsKey("content_es")) {
-                    book.setContentSr(highlight.get("content_es").get(0));
+                    book.setContentEs(highlight.get("content_es").get(0));
                 }
                 if (highlight.containsKey("content_it")) {
-                    book.setContentSr(highlight.get("content_it").get(0));
+                    book.setContentIt(highlight.get("content_it").get(0));
                 }
                 if (highlight.containsKey("content_pt")) {
-                    book.setContentSr(highlight.get("content_pt").get(0));
+                    book.setContentPt(highlight.get("content_pt").get(0));
                 }
                 if (highlight.containsKey("content_uk")) {
-                    book.setContentSr(highlight.get("content_uk").get(0));
+                    book.setContentUk(highlight.get("content_uk").get(0));
                 }
             }
 

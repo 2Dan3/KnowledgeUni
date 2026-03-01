@@ -53,26 +53,18 @@ public class IndexingServiceImpl implements IndexingService {
 
 //        hr/sr, en, de, fr, ru, uk, es, it, pt)
         var documentContent = extractDocumentContent(documentFile);
-        if (detectLanguage(documentContent).equals("SR")) {
-            newIndex.setContentSr(documentContent);
-        }else if (detectLanguage(documentContent).equals("RU")) {
-            newIndex.setContentRu(documentContent);
-        }else if (detectLanguage(documentContent).equals("DE")) {
-            newIndex.setContentDe(documentContent);
-        }else if (detectLanguage(documentContent).equals("FR")) {
-            newIndex.setContentFr(documentContent);
-        }else if (detectLanguage(documentContent).equals("IT")) {
-            newIndex.setContentIt(documentContent);
-        }else if (detectLanguage(documentContent).equals("ES")) {
-            newIndex.setContentEs(documentContent);
-        }else if (detectLanguage(documentContent).equals("PT")) {
-            newIndex.setContentPt(documentContent);
-        }else if (detectLanguage(documentContent).equals("UK")) {
-            newIndex.setContentUk(documentContent);
-        }
-//        TODO
-        else {
-            newIndex.setContentEn(documentContent);
+        var detectedLang = detectLanguage(documentContent);
+
+        switch (detectedLang) {
+            case "SR" -> newIndex.setContentSr(documentContent);
+            case "RU" -> newIndex.setContentRu(documentContent);
+            case "DE" -> newIndex.setContentDe(documentContent);
+            case "FR" -> newIndex.setContentFr(documentContent);
+            case "IT" -> newIndex.setContentIt(documentContent);
+            case "ES" -> newIndex.setContentEs(documentContent);
+            case "PT" -> newIndex.setContentPt(documentContent);
+            case "UK" -> newIndex.setContentUk(documentContent);
+            default -> newIndex.setContentEn(documentContent);
         }
 
         newEntity.setContentInNativeLang(documentContent);
@@ -101,9 +93,11 @@ public class IndexingServiceImpl implements IndexingService {
         try (var pdfFile = multipartPdfFile.getInputStream()) {
             var pdDocument = PDDocument.load(pdfFile);
             var textStripper = new PDFTextStripper();
+//            textStripper.setAddMoreFormatting(false);
             documentContent = textStripper.getText(pdDocument);
             pdDocument.close();
         } catch (IOException e) {
+            System.out.println("\n\nError while loading PDF file content.\n\n");
             throw new LoadingException("Error while trying to load PDF file content.");
         }
 

@@ -166,7 +166,17 @@
                 resultsDiv.empty();
 
                 data.content.forEach(function(result) {
-                    var contentToDisplay = result.contentSr !== null ? result.contentSr : result.contentEn;
+                    var contentToDisplay =
+                        result.contentSr ||
+                        result.contentEn ||
+                        result.contentDe ||
+                        result.contentRu ||
+                        result.contentFr ||
+                        result.contentIt ||
+                        result.contentEs ||
+                        result.contentPt ||
+                        result.contentUk ||
+                        "";
 
                     var card = `<div class="col-md-6">
                                     <div class="card">
