@@ -2,7 +2,7 @@ version: "3.7"
 services:
   elasticsearch:
     build:
-      context: .
+      context: ./src/main/resources
       dockerfile: Dockerfile.elasticsearch
     container_name: knowledgeuni-elasticsearch
     environment:
@@ -21,6 +21,9 @@ services:
     #        tail -f /dev/null &
     #      fi'
     restart: always
+#    todo enable volumes ES
+#    volumes:
+#      - es-data:/usr/share/elasticsearch/data
 
 #  logstash:
 #    image: docker.elastic.co/logstash/logstash:8.15.2
@@ -64,4 +67,6 @@ networks:
     name: knowledgeuni-network
 
 volumes:
+#todo enable volumes ES
+#  es-data:
   minio-data:

@@ -1,3 +1,7 @@
+
+# * Option 1: requires a beforehand-packaging of springboot app by Maven lifecycle
+# + pom.xml change from win-x86_64 to linux-x86_64 for pytorch-native-cpu classifier
+
 # Maven Stage 1: Build
 FROM maven:3.9.2-eclipse-temurin-17 AS build
 WORKDIR /app
@@ -14,7 +18,7 @@ CMD ["java", "-jar", "app.jar"]
 
 
 # OR - all-at-once 1-stage build (results in a much larger image)
-
+# Option 2:
 
 # Start from OpenJDK 17
 #FROM eclipse-temurin:17-jdk-jammy
