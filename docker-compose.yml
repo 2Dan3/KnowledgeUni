@@ -22,8 +22,8 @@ services:
     #      fi'
     restart: always
 #    todo enable volumes ES
-#    volumes:
-#      - es-data:/usr/share/elasticsearch/data
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
 
 #  logstash:
 #    image: docker.elastic.co/logstash/logstash:8.15.2
@@ -68,5 +68,5 @@ networks:
 
 volumes:
 #todo enable volumes ES
-#  es-data:
+  es-data:
   minio-data:

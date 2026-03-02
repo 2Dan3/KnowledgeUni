@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html th:replace="~{fragments/base.html :: layout(~{::title}, ~{::link}, ~{::script}, ~{::centralniDiv})}" lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="UTF-8">
+
+    <th:block th:fragment="link">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=VT323">
+        <link rel="stylesheet" type="text/css" th:href="@{/css/StylesSearchDocs.css}"/>
+    </th:block>
+
+    <th:block th:fragment="script">
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        <script th:src="@{/js/searchDocs.js}"></script>
+        <script th:inline="javascript">
+            window.i18n = {
+                noResults: /*[[#{search.noResults}]]*/,
+                fileIndexed: /*[[#{indexing.success}]]*/
+            };
+        </script>
+    </th:block>
+
+    <title th:fragment="title" th:text="#{data.searchTitle}"></title>
+</head>
+
+<body>
+
+<div th:fragment="centralniDiv">
+    <div class="container">
+    <h1 th:text="#{action.searchHeader}"></h1>
+    <form method="POST" enctype="multipart/form-data" id="fileUploadForm">
+        <input type="file" name="file"/><br/><br/>
+        <input type="submit" th:value="#{action.upload}" id="btnSubmit" class="btn btn-primary"/>
+    </form>
+
+    <br/>
+
+    <div class="container">
+        <h1 th:text="#{action.search}"></h1>
+        <form method="POST" id="luceneQueryLanguage" class="text-center">
+            <div class="form-group">
+                <div class="input-group">
+                    <input type="text" id="query" name="query" th:placeholder="#{data.query}" class="form-control" style="width: 70%;">
+                    <div class="input-group-append">
+                        <div class="input-group-text" style="max-height: 40px; width: 200px;">
+                            <input type="checkbox" id="queryTypeAdvanced" name="queryType" class="form-check-input" style="margin-left: 2px;">
+                            <label for="queryTypeAdvanced" th:text="#{data.advancedSearch}" style="display:inline-block; margin-left: 20px; margin-top: 10px;"></label>
+                            <input type="checkbox" id="queryTypeKNN" name="queryType" class="form-check-input" style="margin-left: 120px;">
+                            <label for="queryTypeKNN" th:text="#{data.KNN}" style="display:inline-block; margin-left: 27px; margin-top: 10px;"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <input type="submit" th:value="#{action.search}" id="btnSubmitLuceneQueryLanguage" class="btn btn-primary">
+        </form>
+    </div>
+
+    <div class="container" id="resultsContainer" style="display: none;">
+        <div class="row" id="resultsHeader">
+            <div class="col">
+                <h1 th:text="#{data.results}"></h1>
+            </div>
+        </div>
+
+        <div class="row" id="results" style="display: none;">
+            <!-- Your result cards will go here -->
+        </div>
+    </div>
+</div>
+</div>
+
+</body>
+</html>

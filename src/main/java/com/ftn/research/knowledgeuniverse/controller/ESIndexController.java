@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/index")
 @RequiredArgsConstructor
-public class IndexController {
+public class ESIndexController {
 
     private final IndexingService indexingService;
 

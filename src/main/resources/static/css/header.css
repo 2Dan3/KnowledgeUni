@@ -1,0 +1,61 @@
+/* Header outer container */
+#navContent {
+    width: 100%;
+    background-color: midnightblue;
+}
+
+/* Flex container for left and right sections */
+#header-content-main {
+    display: flex;
+    justify-content: space-between; /* Push left and right groups apart */
+    align-items: center;            /* Vertical centering */
+    padding: 10px 20px;
+    flex-wrap: wrap;                /* Optional: wrap on small screens */
+}
+
+/* Both groups laid out horizontally */
+.header-left,
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* All links */
+#header-content-main a {
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    border: 1px ridge white;
+}
+
+/* Locale image and selector */
+#locales-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#locale-img-container {
+    width: 2vw;
+    height: 2vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#locale-img {
+    width: 100%;
+    height: auto;
+    border-radius: 50%;
+}
+
+/* Optional: style select dropdown */
+select#locales {
+    padding: 5px;
+    border: 1px ridge white;
+}
+
+.text-white {
+    color: white;
+}

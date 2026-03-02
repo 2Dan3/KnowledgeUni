@@ -1,0 +1,89 @@
+body {
+            background-image: url("https://images.pexels.com/photos/461940/pexels-photo-461940.jpeg");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center center;
+            font-family: "VT323", monospace;
+            color: #333;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.75);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 36px;
+            color: #333;
+        }
+
+        #fileUploadForm, #luceneQueryLanguage {
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        #resultsHeader {
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card {
+            margin: 10px;
+            max-width: 400px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        .card-title {
+            font-size: 22px;
+        }
+
+        .card-text {
+            font-size: 18px;
+            max-height: 30em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #cont-img-container {
+            width: 2vw;
+            height: 2vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #card-img {
+            width: 100%;
+            height: auto;
+        }
+
+        .round {
+            border-radius: 50%;
+        }
+
+        em {
+            background-color: yellow;
+            font-style: normal; /* optional */
+        }
