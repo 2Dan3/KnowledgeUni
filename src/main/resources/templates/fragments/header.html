@@ -3,11 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" th:href="@{/css/header.css}">
-    <script src="webjars/jquery/3.2.1/jquery.min.js"></script>
-<!--    <script th:src="@{js/locale.js}"></script>-->
-    <th:block th:replace="${scr}">
-
-    </th:block>
     <title>Header</title>
 </head>
 <body>
@@ -17,42 +12,19 @@
 
         <!-- LEFT GROUP -->
         <div class="header-left">
-<!--            <th:block th:if="${session.loggedUser != null and session.loggedUser.admin}">-->
-<!--                <a th:href="@{/airplanes}" th:text="#{data.airplanes}"></a>-->
-<!--                <a th:href="@{/locations}" th:text="#{data.locations}"></a>-->
-<!--                <a th:href="@{/airports}" th:text="#{data.airports}"></a>-->
-<!--                <a th:href="@{/discounts}" th:text="#{data.discounts}"></a>-->
-<!--                <a th:href="@{/flights/report}" th:text="#{data.reports}"></a>-->
-<!--                <a th:href="@{/cards}" th:text="#{data.cardRequests}"></a>-->
-<!--                <a th:href="@{/users}" th:text="#{data.users}"></a>-->
-<!--            </th:block>-->
-<!--            <a th:href="@{/flights}" th:text="#{data.flights}"></a>-->
             <a th:href="@{/}" th:text="#{data.homepage}"></a>
         </div>
 
         <!-- RIGHT GROUP -->
         <div class="header-right">
-
-<!--            <th:block th:if="${session.loggedUser != null}">-->
-<!--                <a th:href="@{/reservations/cart}" th:text="#{data.cart}"></a>-->
-<!--                <a th:href="@{/users/profile(username=${session.loggedUser.username})}" th:text="#{user.profile(${session.loggedUser.username})}"></a>-->
-<!--                <a th:href="@{/users/logout}" th:text="#{data.logout}"></a>-->
-<!--            </th:block>-->
-
-<!--            <a th:href="@{/users/login}" th:unless="${session.loggedUser != null}" th:text="#{data.login}"></a>-->
-
             <div id="locales-container">
                 <div id="locale-img-container">
                     <img th:src="|@{/img}/${#locale}_icon.png|" class="round" id="locale-img" th:alt="|(${#locale})|" />
                 </div>
-<!--                (<span th:text="${#locale}"></span>)-->
                 <span class="text-white" th:text="#{lang.change}"></span>:
                 <select id="locales" name="locales" th:with="language=${#locale.language}">
-<!--                    <option value=""></option>-->
                     <option value="en" th:text="#{lang.eng}" th:selected="${#strings.equals(language,'en')}"></option>
                     <option value="sr" th:text="#{lang.sr}" th:selected="${#strings.equals(language,'sr')}"></option>
-<!--                    <option value="sr" th:text="#{lang.sr-Cyrl}" th:selected="${#strings.equals(language,'sr-Cyrl')}"></option>-->
-<!--                    <option value="sr" th:text="#{lang.sr-Latn}" th:selected="${#strings.equals(language,'sr-Latn')}" th:if="${#strings.equals(language,'sr-Cyrl') || #strings.equals(language, 'sr-Latn')}"></option>-->
                     <option value="ru" th:text="#{lang.ru}" th:selected="${#strings.equals(language,'ru')}"></option>
                     <option value="de" th:text="#{lang.de}" th:selected="${#strings.equals(language,'de')}"></option>
                     <option value="fr" th:text="#{lang.fr}" th:selected="${#strings.equals(language,'fr')}"></option>
@@ -61,12 +33,12 @@
                     <option value="pt" th:text="#{lang.pt}" th:selected="${#strings.equals(language,'pt')}"></option>
                     <option value="uk" th:text="#{lang.uk}" th:selected="${#strings.equals(language,'uk')}"></option>
                 </select>
-
             </div>
-
         </div>
 
     </div>
+    <!-- Insert any additional scripts passed from base -->
+    <th:block th:replace="${scr}"></th:block>
 </header>
 
 </body>

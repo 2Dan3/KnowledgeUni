@@ -2,29 +2,31 @@
 <html th:fragment="layout(title, links, scripts, content)" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
-<!--  todo  check line -->
     <base th:href="@{/}">
+
+    <!-- Core scripts (jQuery + locale.js) -->
     <th:block th:fragment="scr">
+        <!-- jQuery included exactly once -->
         <script src="webjars/jquery/3.2.1/jquery.min.js"></script>
+        <!-- Locale script depends on jQuery -->
         <script th:src="@{/js/locale.js}"></script>
     </th:block>
-    <link rel="stylesheet" type="text/css" th:href="@{/css/header.css}">
-<!-- todo   <link rel="stylesheet" type="text/css" th:href="@{/css/StylesInvertedTable.css}"/>-->
 
-    <!-- todo stilovitabela, stiloviforma css link -->
+    <!-- Styles -->
+    <link rel="stylesheet" type="text/css" th:href="@{/css/header.css}">
+
     <title th:replace="${title}"></title>
 
-    <!-- additional links -->
+    <!-- Additional links/scripts passed from index.html -->
     <th:block th:replace="${links}" />
-    <!-- additional js scripts -->
     <th:block th:replace="${scripts}" />
-
 </head>
+
 <body>
+<!-- Header fragment -->
+<header id="navContent" th:replace="~{fragments/header.html :: header(~{::scr})}"></header>
 
-  <header id="navContent" th:replace="~{fragments/header.html :: header(~{::scr})}"></header>
-
-  <div th:replace="${content}"></div>
-
+<!-- Main content -->
+<div th:replace="${content}"></div>
 </body>
 </html>
