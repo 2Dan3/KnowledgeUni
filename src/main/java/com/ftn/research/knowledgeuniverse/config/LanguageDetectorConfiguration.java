@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 
 @Configuration
-public class BeanConfiguration {
+public class LanguageDetectorConfiguration {
 
     @Bean
     public LanguageDetector languageDetector() {

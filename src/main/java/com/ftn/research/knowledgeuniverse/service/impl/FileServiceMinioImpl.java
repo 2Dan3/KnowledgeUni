@@ -10,8 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Collections;
+import java.io.InputStream;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -25,63 +26,72 @@ public class FileServiceMinioImpl implements FileService {
     @Override
     public String store(MultipartFile file, String serverFilename) {
         if (file.isEmpty()) {
-            throw new StorageException("Failed to store empty file.");
+            throw new StorageException("Cannot store empty file.");
         }
 
-        var originalFilenameTokens =
-            Objects.requireNonNull(file.getOriginalFilename()).split("\\.");
-        var extension = originalFilenameTokens[originalFilenameTokens.length - 1];
-
         try {
-            PutObjectArgs args = PutObjectArgs.builder()
-                .bucket(bucketName)
-                .object(serverFilename + "." + extension)
-                .headers(Collections.singletonMap("Content-Disposition",
-                    "attachment; filename=\"" + file.getOriginalFilename() + "\""))
-                .stream(file.getInputStream(), file.getInputStream().available(), -1)
-                .build();
-            minioClient.putObject(args);
-        } catch (Exception e) {
-            throw new StorageException("Error while storing file in Minio.");
-        }
+            String originalFilename = Objects.requireNonNull(file.getOriginalFilename());
+            String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+            String finalName = serverFilename + "." + extension;
 
-        return serverFilename + "." + extension;
-    }
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(finalName)
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(file.getContentType())
+                            .build()
+            );
 
-    @Override
-    public void delete(String serverFilename) {
-        try {
-            RemoveObjectArgs args = RemoveObjectArgs.builder()
-                .bucket(bucketName)
-                .object(serverFilename)
-                .build();
-            minioClient.removeObject(args);
+            return finalName;
+
         } catch (Exception e) {
-            throw new StorageException("Error while deleting " + serverFilename + " from Minio.");
+            throw new StorageException("Error storing file in MinIO: " + e.getMessage());
         }
     }
 
     @Override
-    public GetObjectResponse loadAsResource(String serverFilename) {
+    public InputStream load(String serverFilename) {
         try {
-            // Get signed URL
-            var argsDownload = GetPresignedObjectUrlArgs.builder()
-                .method(Method.GET)
-                .bucket(bucketName)
-                .object(serverFilename)
-                .expiry(60 * 5) // in seconds
-                .build();
-            var downloadUrl = minioClient.getPresignedObjectUrl(argsDownload);
-            System.out.println(downloadUrl);
-
-            // Get object response
-            var args = GetObjectArgs.builder()
-                .bucket(bucketName)
-                .object(serverFilename)
-                .build();
-            return minioClient.getObject(args);
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(serverFilename)
+                            .build()
+            );
         } catch (Exception e) {
-            throw new NotFoundException("Document " + serverFilename + " does not exist.");
+            throw new NotFoundException("File not found: " + serverFilename);
+        }
+    }
+
+    @Override
+    public String getPresignedUrl(String serverFilename) {
+        try {
+            return minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(serverFilename)
+                            .expiry(5, TimeUnit.MINUTES)
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new NotFoundException("File not found: " + serverFilename);
+        }
+    }
+
+    @Override
+    public String getContentType(String serverFilename) {
+        try {
+            StatObjectResponse stat = minioClient.statObject(
+                    StatObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(serverFilename)
+                            .build()
+            );
+            return stat.contentType() != null ? stat.contentType() : "application/octet-stream";
+        } catch (Exception e) {
+            return "application/octet-stream";
         }
     }
 }

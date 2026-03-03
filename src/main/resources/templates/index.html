@@ -5,23 +5,22 @@
 <head>
     <meta charset="UTF-8">
 
-    <!-- Styles for index -->
     <th:block th:fragment="link">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=VT323">
         <link rel="stylesheet" type="text/css" th:href="@{/css/StylesSearchDocs.css}"/>
     </th:block>
 
-    <!-- Scripts for index -->
     <th:block th:fragment="script">
         <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
         <script th:src="@{/js/searchDocs.js}"></script>
-        <script th:inline="javascript">
-            window.i18n = {
-                noResults: /*[[#{search.noResults}]]*/,
-                fileIndexed: /*[[#{indexing.success}]]*/
-            };
-        </script>
+<!--        <script th:inline="javascript">-->
+<!--            window.i18n = {-->
+<!--                noResults: /*[[#{search.noResults}]]*/,-->
+<!--                fileIndexed: /*[[#{indexing.success}]]*/-->
+<!--                fileDownload: /*[[#{action.download}]]*/-->
+<!--            };-->
+<!--        </script>-->
     </th:block>
 
     <title th:fragment="title" th:text="#{data.searchTitle}"></title>
@@ -31,8 +30,9 @@
 <div th:fragment="centralniDiv">
     <div class="container">
         <h1 th:text="#{action.searchHeader}"></h1>
-        <form method="POST" enctype="multipart/form-data" id="fileUploadForm">
-            <input type="file" name="file"/><br/><br/>
+        <form enctype="multipart/form-data" id="fileUploadForm">
+            <input type="file" name="file" accept=".pdf" required/><br/><br/>
+            <input type="file" name="previewImage" accept="image/*"/><br/><br/>
             <input type="submit" th:value="#{action.upload}" id="btnSubmit" class="btn btn-primary"/>
         </form>
 

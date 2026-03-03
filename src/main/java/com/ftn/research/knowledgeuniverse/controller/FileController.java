@@ -9,28 +9,49 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.InputStream;
+import java.util.Map;
 
 @RestController
-@RequestMapping("api/file")
+@RequestMapping("/api/file")
 @RequiredArgsConstructor
 @Slf4j
+@CrossOrigin
 public class FileController {
 
     private final FileService fileService;
 
+    /**
+     * Download endpoint (PDF, images, any file)
+     */
     @GetMapping("/{filename}")
     @ResponseBody
-    public ResponseEntity<Resource> serveFile(@PathVariable String filename) throws IOException {
-//        log.info("STATISTIC-LOG serveFile -> {}", filename);
+    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
 
-        var minioResponse = fileService.loadAsResource(filename);
+        InputStream stream = fileService.load(filename);
+        String contentType = fileService.getContentType(filename);
+
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION,
-                minioResponse.headers().get("Content-Disposition"))
-            .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(Path.of(filename)))
-            .body(new InputStreamResource(minioResponse));
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CONTENT_TYPE, contentType)
+                .body(new InputStreamResource(stream));
+    }
+
+    /**
+     * Image preview endpoint (presigned URL from MinIO)
+     */
+    @GetMapping("/preview/{filename}")
+    public ResponseEntity<Map<String, String>> previewImage(@PathVariable String filename) {
+
+        String contentType = fileService.getContentType(filename);
+
+        if (!contentType.startsWith("image/")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Preview allowed only for image files"));
+        }
+
+        String presignedUrl = fileService.getPresignedUrl(filename);
+
+        return ResponseEntity.ok(Map.of("url", presignedUrl));
     }
 }
