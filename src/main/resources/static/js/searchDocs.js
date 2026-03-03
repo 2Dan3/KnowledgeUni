@@ -56,6 +56,7 @@ $(document).ready(function() {
                         result.contentRu || result.contentFr || result.contentIt ||
                         result.contentEs || result.contentPt || result.contentUk ||
                         "unknown";
+//                        console.log("RAW CONTENT:", contentToDisplay);
 
                     switch(contentToDisplay) {
                         case result.contentSr: imgToDisplay = "sr_icon"; break;
@@ -72,9 +73,12 @@ $(document).ready(function() {
 
                     var flagPath = "/img/" + imgToDisplay + ".png";
                     var pdfFilename = result.serverFilename;
-                    var temp = pdfFilename.substring(0, pdfFilename.lastIndexOf('.'));console.log(temp);
-                    var temp2 = temp + "_preview";console.log(temp2);
-                    var imgFilename = temp2 + ".png";console.log(imgFilename);
+                    var temp = pdfFilename.substring(0, pdfFilename.lastIndexOf('.'));
+//                    console.log(temp);
+                    var temp2 = temp + "_preview";
+//                    console.log(temp2);
+                    var imgFilename = temp2 + ".png";
+//                    console.log(imgFilename);
 
 
                     // Flag icon, based on results' content language
@@ -92,7 +96,9 @@ $(document).ready(function() {
                                  alt="preview"
                                  style="max-height:200px; object-fit:cover;" />
                         </div>
-                    `;console.log(imgFilename);
+                    `;
+
+//                    console.log(imgFilename);
 
                     var card = `
                         <div class="col-md-6">

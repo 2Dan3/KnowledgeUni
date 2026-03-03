@@ -29,7 +29,7 @@ public class ElasticsearchIndexInitializer {
                 // 2️⃣ Create mapping from annotations (multi-language + dense_vector)
                 indexOps.putMapping(indexOps.createMapping());
 
-                System.out.println("\n\nBookIndex created successfully.\n\n");
+//                System.out.println("\n\nBookIndex created successfully.\n\n");
             }
         };
     }

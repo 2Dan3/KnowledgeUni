@@ -118,6 +118,8 @@ public class SearchServiceImpl implements SearchService {
                 HighlightParameters.builder()
                         .withPreTags("<em>")
                         .withPostTags("</em>")
+                        .withFragmentSize(100)
+                        .withNumberOfFragments(10)
                         .build(),
                 List.of(
                         new HighlightField("content_sr"),
@@ -237,44 +239,31 @@ public class SearchServiceImpl implements SearchService {
         List<BookIndex> results = new ArrayList<>();
 
         for (SearchHit<BookIndex> hit : searchHits) {
+//            System.out.println(hit.getHighlightFields());
 
             // Apply highlight if available
             Map<String, List<String>> highlight = hit.getHighlightFields();
             BookIndex book = hit.getContent();
 
-            if (highlight != null) {
-                if (highlight.containsKey("content_sr")) {
-                    book.setContentSr(highlight.get("content_sr").get(0));
+            highlight.forEach((field, fragments) -> {
+                String combined = String.join("...<br/><br/>...", fragments);
+
+                switch (field) {
+                    case "contentSr" -> book.setContentSr(combined);
+                    case "contentEn" -> book.setContentEn(combined);
+                    case "contentDe" -> book.setContentDe(combined);
+                    case "contentRu" -> book.setContentRu(combined);
+                    case "contentFr" -> book.setContentFr(combined);
+                    case "contentEs" -> book.setContentEs(combined);
+                    case "contentIt" -> book.setContentIt(combined);
+                    case "contentPt" -> book.setContentPt(combined);
+                    case "contentUk" -> book.setContentUk(combined);
                 }
-                if (highlight.containsKey("content_en")) {
-                    book.setContentEn(highlight.get("content_en").get(0));
-                }
-                if (highlight.containsKey("content_de")) {
-                    book.setContentDe(highlight.get("content_de").get(0));
-                }
-                if (highlight.containsKey("content_ru")) {
-                    book.setContentRu(highlight.get("content_ru").get(0));
-                }
-                if (highlight.containsKey("content_fr")) {
-                    book.setContentFr(highlight.get("content_fr").get(0));
-                }
-                if (highlight.containsKey("content_es")) {
-                    book.setContentEs(highlight.get("content_es").get(0));
-                }
-                if (highlight.containsKey("content_it")) {
-                    book.setContentIt(highlight.get("content_it").get(0));
-                }
-                if (highlight.containsKey("content_pt")) {
-                    book.setContentPt(highlight.get("content_pt").get(0));
-                }
-                if (highlight.containsKey("content_uk")) {
-                    book.setContentUk(highlight.get("content_uk").get(0));
-                }
-            }
+            });
 
             results.add(book);
         }
-
+//        System.out.println(searchQuery.getQuery());
         return new PageImpl<>(results, searchQuery.getPageable(), searchHits.getTotalHits());
     }
 }

@@ -39,7 +39,7 @@ public class ESIndexController {
             String previewServerFilename = pdfServerFilename.substring(0, pdfServerFilename.lastIndexOf('.')) + "_preview";
 
             fileService.store(previewImage, previewServerFilename);
-            System.out.println(pdfServerFilename + " " + previewServerFilename + " " + extension);
+//            System.out.println(pdfServerFilename + " " + previewServerFilename + " " + extension);
         }
 
         return new BookDocumentFileResponseDTO(pdfServerFilename);
