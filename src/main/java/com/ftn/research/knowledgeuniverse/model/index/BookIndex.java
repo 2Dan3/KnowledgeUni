@@ -29,7 +29,7 @@ public class BookIndex {
     @Field(type = FieldType.Text, store = true, name = "content_en", analyzer = "english", searchAnalyzer = "english")
     private String contentEn;
 
-    @Field(type = FieldType.Text, store = true, name = "content_ru", analyzer = "russian", searchAnalyzer = "russian")
+    @Field(type = FieldType.Text, store = true, name = "content_ru", analyzer = "russian_indexing", searchAnalyzer = "russian_searching")
     private String contentRu;
 
     @Field(type = FieldType.Text, store = true, name = "content_uk", analyzer = "ukrainian", searchAnalyzer = "ukrainian")

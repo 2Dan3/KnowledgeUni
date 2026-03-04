@@ -1,25 +1,149 @@
 {
   "analysis": {
-    "analyzer": {
-      "serbian_simple": {
-        "type": "custom",
-        "tokenizer": "icu_tokenizer",
-        "filter": ["serbian_cyrillic_to_latinic", "lowercase"]
+
+    "char_filter": {
+      "russian_char_cleanup": {
+        "type": "icu_transform",
+        "id": "Any-NFKC; Russian-Latin; NFD; [:Nonspacing Mark:] Remove; NFC"
       },
-      "ukrainian": {
-        "type": "custom",
-        "tokenizer": "standard",
-        "filter": ["ukrainian_stemmer", "icu_folding", "lowercase"]
-      }
-    },
-    "filter": {
+
       "serbian_cyrillic_to_latinic": {
         "type": "icu_transform",
-        "id": "Cyrillic-Latin; NFD; [:Nonspacing Mark:] Remove; NFC"
+        "id": "Any-NFKC; Serbian-Cyrillic-Latin; NFD; [:Nonspacing Mark:] Remove; NFC"
       },
-      "ukrainian_stemmer": {
+
+      "ukrainian_cyrillic_to_latinic": {
+        "type": "icu_transform",
+        "id": "Any-NFKC; Ukrainian-Latin; NFD; [:Nonspacing Mark:] Remove; NFC"
+      }
+    },
+
+    "analyzer": {
+
+      "italian": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": ["icu_folding", "lowercase"]
+      },
+
+      "portuguese": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": ["icu_folding", "lowercase"]
+      },
+
+      "french": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": ["icu_folding", "lowercase"]
+      },
+
+      "spanish": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": ["icu_folding", "lowercase"]
+      },
+
+      "english": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": ["icu_folding", "lowercase"]
+      },
+
+      "german": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": ["icu_folding", "lowercase"]
+      },
+
+      "russian_indexing": {
+        "type": "custom",
+        "char_filter": ["russian_char_cleanup"],
+        "tokenizer": "icu_tokenizer",
+        "filter": ["lowercase", "icu_normalizer", "russian_yo_normalizer", "russian_stop", "russian_keywords", "russian_stemmer"]
+      },
+
+      "russian_searching": {
+        "type": "custom",
+        "char_filter": ["russian_char_cleanup"],
+        "tokenizer": "icu_tokenizer",
+        "filter": ["lowercase", "icu_normalizer", "russian_yo_normalizer", "russian_stop", "russian_keywords", "russian_synonyms", "russian_stemmer"]
+      },
+
+      "serbian_simple": {
+        "type": "custom",
+        "char_filter": ["serbian_cyrillic_to_latinic"],
+        "tokenizer": "icu_tokenizer",
+        "filter": ["lowercase", "icu_normalizer", "serbian_stop", "serbian_keywords", "serbian_stemmer"]
+      },
+
+      "ukrainian": {
+        "type": "custom",
+        "char_filter": ["ukrainian_cyrillic_to_latinic"],
+        "tokenizer": "icu_tokenizer",
+        "filter": ["lowercase", "ukrainian_stop", "ukrainian_stemmer", "icu_folding"]
+      }
+    },
+
+    "filter": {
+
+      "serbian_stemmer": {
+        "type": "stemmer",
+        "language": "serbian"
+      },
+
+      "serbian_stop": {
+        "type": "stop",
+        "stopwords": "_serbian_"
+      },
+
+      "serbian_keywords": {
+        "type": "keyword_marker",
+        "keywords": []
+      },
+
+      "russian_synonyms": {
+        "type": "synonym_graph",
+        "synonyms": [
+          "rf, rossiiskaia federatsiia, matushka, matuska",
+          "sssr, sovetskii soiuz",
+          "rssr, rsfsr, rosiiskaia respublika, rossiia",
+          "ussr, ukrainskaia respublika, ukraina",
+          "spb, sankt-peterburg, sankt peterburg, piter"
+        ]
+      },
+
+      "russian_stemmer": {
         "type": "stemmer",
         "language": "russian"
+      },
+
+      "russian_stop": {
+        "type": "stop",
+        "stopwords": "_russian_"
+      },
+
+      "russian_yo_normalizer": {
+        "type": "mapping",
+        "mappings": [
+          "ё => е",
+          "Ё => Е"
+        ]
+      },
+
+      "russian_keywords": {
+        "type": "keyword_marker",
+        "keywords": []
+      },
+
+      "ukrainian_stemmer": {
+        "type": "stemmer",
+        "language": "ukrainian"
+      },
+
+      "ukrainian_stop": {
+        "type": "stop",
+        "stopwords": "_ukrainian_"
       }
     }
   }

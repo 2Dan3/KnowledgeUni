@@ -1,3 +1,5 @@
 FROM docker.elastic.co/elasticsearch/elasticsearch:8.15.2
 
 RUN elasticsearch-plugin install --batch analysis-icu
+
+RUN elasticsearch-plugin install --batch analysis-ukrainian
