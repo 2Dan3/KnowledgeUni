@@ -27,6 +27,8 @@ $(document).ready(function() {
 
             $("#luceneQueryLanguage").submit(function(event) {
                 event.preventDefault();
+                $("#btnSubmitLuceneQueryLanguage").prop("disabled", true);
+
                 var query = {
                     keywords: $("#query").val().split(" ")
                 };
@@ -38,7 +40,14 @@ $(document).ready(function() {
                     contentType: 'application/json',
                     success: function(data) {
                         displayResults(data);
-                    }
+                    },
+                     error: function() {
+                         alert('An error occurred during search. Please try again later.');
+                     },
+                     complete: function(jqXHR, textStatus) {
+//                        console.log("AJAX finished with status:", textStatus);
+                         $("#btnSubmitLuceneQueryLanguage").prop("disabled", false);
+                     }
                 });
             });
 

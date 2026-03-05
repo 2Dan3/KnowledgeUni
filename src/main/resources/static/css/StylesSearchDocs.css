@@ -62,8 +62,11 @@ body {
         .card-text {
             font-size: 18px;
             max-height: 30em;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow: auto;
+        }
+
+        .preview-img {
+            border: 2px solid lightblue;
         }
 
         #cont-img-container {
