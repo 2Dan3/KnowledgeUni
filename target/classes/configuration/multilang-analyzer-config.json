@@ -55,7 +55,7 @@
         "char_filter": [
           "russian_yo_normalizer"
         ],
-        "filter": ["lowercase", "icu_normalizer", "russian_stop", "russian_keywords", "russian_stemmer", "russian_cyrillic_to_latinic", "russian_synonyms"]
+        "filter": ["lowercase", "icu_normalizer", "russian_stop", "russian_keywords", "russian_stemmer", "russian_cyrillic_to_latinic"]
       },
 
       "russian_searching": {
@@ -64,7 +64,7 @@
         "char_filter": [
           "russian_yo_normalizer"
         ],
-        "filter": ["lowercase", "icu_normalizer", "russian_stop", "russian_keywords", "russian_stemmer", "russian_cyrillic_to_latinic"]
+        "filter": ["lowercase", "icu_normalizer", "russian_synonyms", "russian_stop", "russian_keywords", "russian_stemmer", "russian_cyrillic_to_latinic"]
       },
 
       "serbian_simple": {
@@ -100,12 +100,12 @@
       "russian_synonyms": {
         "type": "synonym_graph",
         "synonyms": [
-          "rf, rossiiskaia federatsiia, matushka, matuska",
-          "sssr, sovetskii soiuz",
-          "rssr, rsfsr, rosiiskaia respublika, rossiia",
-          "ussr, ukrainskaia respublika, ukraina",
-          "spb, sankt-peterburg, sankt peterburg, piter",
-          "babki, dengi"
+          "rf, rossiiskaia federatsiia, matushka, рф, матушка, российская федерация",
+          "sssr, sovetskii soiuz, ссср, советский союуз",
+          "rssr, rsfsr, rosiiskaia respublika, rossiia, рсср, рсфср, российская республика, россия",
+          "ussr, ukrainskaia respublika, ukraina, украина, украинская республика, усср",
+          "spb, sankt-peterburg, sankt peterburg, petersburg, petersbourg, piter, leningrad, спб, санкт-петербург, питер, ленинград",
+          "babki, dengi, бабки, деньги"
         ]
       },
 

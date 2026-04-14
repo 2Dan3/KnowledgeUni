@@ -36,28 +36,108 @@ public class SearchServiceImpl implements SearchService {
 
     private final EmbeddingService embeddingService;
 
-    @Override
-    public Page<BookIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
+//    @Override
+//    public Page<BookIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
+//
+//        if (isKNN) {
+//            try {
+//                return searchByVector(embeddingService.getEmbedding(String.join(" ", keywords)));
+//            } catch (TranslateException e) {
+//                log.error("Vectorization failed", e);
+//                return Page.empty();
+//            }
+//        }
+//
+//        // 1️⃣ Build query
+//        NativeQuery query = new NativeQueryBuilder()
+//                .withQuery(buildSimpleSearchQuery(keywords))
+//                .withPageable(pageable)
+//                .build();
+//
+//        // 2️⃣ Attach highlighting
+//        query.setHighlightQuery(new HighlightQuery(buildHighlight(), BookIndex.class));
+//
+//        return runQuery(query);
+//    }
 
-        if (isKNN) {
-            try {
-                return searchByVector(embeddingService.getEmbedding(String.join(" ", keywords)));
-            } catch (TranslateException e) {
-                log.error("Vectorization failed", e);
-                return Page.empty();
-            }
+    private Query buildHybridQuery(List<String> tokens, List<Float> vector) {
+
+        BoolQuery.Builder bool = new BoolQuery.Builder();
+
+        String queryText = String.join(" ", tokens);
+
+        // 🔥 BM25 (stronger)
+        bool.should(s -> s.multiMatch(m -> m
+                .query(queryText)
+                .fields(
+                        "content_sr^2.0",
+                        "content_en^2.0",
+                        "content_de^2.0",
+                        "content_fr^2.0",
+                        "content_ru^2.0",
+                        "content_es^2.0",
+                        "content_it^2.0",
+                        "content_pt^2.0",
+                        "content_uk^2.0",
+                        "title^3.0"
+                )
+        ));
+
+        // 🔥 Vector (weaker)
+        bool.should(s -> s.knn(k -> k
+                .field("vector")
+                .queryVector(vector)
+                .k(20)
+                .numCandidates(100)
+                .boost(0.7f)
+        ));
+
+        return bool.build()._toQuery();
+    }
+
+    @Override
+    public Page<ChunkDocument> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
+
+        String queryText = String.join(" ", keywords);
+
+        // 1️⃣ Get embedding
+        float[] embedding;
+        try {
+            embedding = embeddingService.getEmbedding(queryText);
+        } catch (Exception e) {
+            log.error("Embedding failed", e);
+            return Page.empty();
         }
 
-        // 1️⃣ Build query
+        // 2️⃣ Convert to List<Float>
+        List<Float> vector = new ArrayList<>(embedding.length);
+        for (float f : embedding) {
+            vector.add(f);
+        }
+
+        // 3️⃣ 🔥 USE HYBRID QUERY HERE (THIS IS THE ONLY CHANGE)
         NativeQuery query = new NativeQueryBuilder()
-                .withQuery(buildSimpleSearchQuery(keywords))
+                .withQuery(buildHybridQuery(keywords, vector))
                 .withPageable(pageable)
                 .build();
 
-        // 2️⃣ Attach highlighting
-        query.setHighlightQuery(new HighlightQuery(buildHighlight(), BookIndex.class));
+        // 4️⃣ Keep highlight EXACTLY as before
+        query.setHighlightQuery(new HighlightQuery(buildHighlight(), ChunkDocument.class));
 
+        // 5️⃣ Execute
         return runQuery(query);
+
+
+//        todo where to put this if i replaced buildSimple w/ hybridSearch
+//        float[] embedding = embeddingService.getEmbedding(queryText);
+//
+//        List<Float> vector = new ArrayList<>();
+//        for (float f : embedding) vector.add(f);
+//
+//        NativeQuery query = new NativeQueryBuilder()
+//                .withQuery(buildHybridQuery(tokens, vector))
+//                .withPageable(pageable)
+//                .build();
     }
 
     @Override
@@ -113,25 +193,37 @@ public class SearchServiceImpl implements SearchService {
     // =========================
     // Build highlight for content_sr & content_en
     // =========================
+//    private Highlight buildHighlight() {
+//        return new Highlight(
+//                HighlightParameters.builder()
+//                        .withPreTags("<em>")
+//                        .withPostTags("</em>")
+//                        .withFragmentSize(100)
+//                        .withNumberOfFragments(10)
+//                        .build(),
+//                List.of(
+//                        new HighlightField("content_sr"),
+//                        new HighlightField("content_en"),
+//                        new HighlightField("content_de"),
+//                        new HighlightField("content_ru"),
+//                        new HighlightField("content_fr"),
+//                        new HighlightField("content_es"),
+//                        new HighlightField("content_it"),
+//                        new HighlightField("content_pt"),
+//                        new HighlightField("content_uk")
+//                )
+//        );
+//    }
+
     private Highlight buildHighlight() {
         return new Highlight(
                 HighlightParameters.builder()
                         .withPreTags("<em>")
                         .withPostTags("</em>")
-                        .withFragmentSize(100)
-                        .withNumberOfFragments(10)
+                        .withFragmentSize(150)
+                        .withNumberOfFragments(5)
                         .build(),
-                List.of(
-                        new HighlightField("content_sr"),
-                        new HighlightField("content_en"),
-                        new HighlightField("content_de"),
-                        new HighlightField("content_ru"),
-                        new HighlightField("content_fr"),
-                        new HighlightField("content_es"),
-                        new HighlightField("content_it"),
-                        new HighlightField("content_pt"),
-                        new HighlightField("content_uk")
-                )
+                List.of(new HighlightField("content"))
         );
     }
 
@@ -231,39 +323,62 @@ public class SearchServiceImpl implements SearchService {
     // =========================
     // Execute query + apply highlight
     // =========================
-    private Page<BookIndex> runQuery(NativeQuery searchQuery) {
+//    private Page<BookIndex> runQuery(NativeQuery searchQuery) {
+//
+//        SearchHits<BookIndex> searchHits =
+//                elasticsearchTemplate.search(searchQuery, BookIndex.class);
+//
+//        List<BookIndex> results = new ArrayList<>();
+//
+//        for (SearchHit<BookIndex> hit : searchHits) {
+////            System.out.println(hit.getHighlightFields());
+//
+//            // Apply highlight if available
+//            Map<String, List<String>> highlight = hit.getHighlightFields();
+//            BookIndex book = hit.getContent();
+//
+//            highlight.forEach((field, fragments) -> {
+//                String combined = String.join("...<br/><br/>...", fragments);
+//
+//                switch (field) {
+//                    case "contentSr" -> book.setContentSr(combined);
+//                    case "contentEn" -> book.setContentEn(combined);
+//                    case "contentDe" -> book.setContentDe(combined);
+//                    case "contentRu" -> book.setContentRu(combined);
+//                    case "contentFr" -> book.setContentFr(combined);
+//                    case "contentEs" -> book.setContentEs(combined);
+//                    case "contentIt" -> book.setContentIt(combined);
+//                    case "contentPt" -> book.setContentPt(combined);
+//                    case "contentUk" -> book.setContentUk(combined);
+//                }
+//            });
+//
+//            results.add(book);
+//        }
+////        System.out.println(searchQuery.getQuery());
+//        return new PageImpl<>(results, searchQuery.getPageable(), searchHits.getTotalHits());
+//    }
 
-        SearchHits<BookIndex> searchHits =
-                elasticsearchTemplate.search(searchQuery, BookIndex.class);
+    private Page<ChunkDocument> runQuery(NativeQuery query) {
 
-        List<BookIndex> results = new ArrayList<>();
+        SearchHits<ChunkDocument> hits =
+                elasticsearchTemplate.search(query, ChunkDocument.class);
 
-        for (SearchHit<BookIndex> hit : searchHits) {
-//            System.out.println(hit.getHighlightFields());
+        List<ChunkDocument> results = new ArrayList<>();
 
-            // Apply highlight if available
+        for (SearchHit<ChunkDocument> hit : hits) {
+
+            ChunkDocument doc = hit.getContent();
+
             Map<String, List<String>> highlight = hit.getHighlightFields();
-            BookIndex book = hit.getContent();
 
-            highlight.forEach((field, fragments) -> {
-                String combined = String.join("...<br/><br/>...", fragments);
+            if (highlight.containsKey("content")) {
+                doc.setContent(String.join("...<br/>...", highlight.get("content")));
+            }
 
-                switch (field) {
-                    case "contentSr" -> book.setContentSr(combined);
-                    case "contentEn" -> book.setContentEn(combined);
-                    case "contentDe" -> book.setContentDe(combined);
-                    case "contentRu" -> book.setContentRu(combined);
-                    case "contentFr" -> book.setContentFr(combined);
-                    case "contentEs" -> book.setContentEs(combined);
-                    case "contentIt" -> book.setContentIt(combined);
-                    case "contentPt" -> book.setContentPt(combined);
-                    case "contentUk" -> book.setContentUk(combined);
-                }
-            });
-
-            results.add(book);
+            results.add(doc);
         }
-//        System.out.println(searchQuery.getQuery());
-        return new PageImpl<>(results, searchQuery.getPageable(), searchHits.getTotalHits());
+
+        return new PageImpl<>(results, query.getPageable(), hits.getTotalHits());
     }
 }

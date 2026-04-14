@@ -8,8 +8,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "book")
+//      TODO migrate Book storage from RDB to Neo4j
 public class Book {
 
+//    TODO explore the idea of moving from UUID to Long
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String isbn;
@@ -19,6 +21,10 @@ public class Book {
 
     @Column(name = "title")
     private String title;
+
+//    TODO uncomment - majority text language store inside DataBase
+//    @Column(name = "lang")
+//    private String language;
 
 //    @Column(name = "content_native")
     @Transient

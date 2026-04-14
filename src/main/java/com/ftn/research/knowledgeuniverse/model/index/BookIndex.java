@@ -17,47 +17,49 @@ public class BookIndex {
     @Id
     private String id;
 
-//    @Field(type = FieldType.Text, store = true, name = "author")
-//    private String author;
+    @Field(type = FieldType.Keyword, name = "book_id")
+    private String bookId;
 
     @Field(type = FieldType.Text, store = true, name = "title")
     private String title;
 
-    @Field(type = FieldType.Text, store = true, name = "content_sr", analyzer = "serbian_simple", searchAnalyzer = "serbian_simple")
+    // 🔥 KEEP ALL LANGUAGE FIELDS (your analyzers are GOLD)
+    @Field(type = FieldType.Text, name = "content_sr", analyzer = "serbian_simple", searchAnalyzer = "serbian_simple")
     private String contentSr;
 
-    @Field(type = FieldType.Text, store = true, name = "content_en", analyzer = "english", searchAnalyzer = "english")
+    @Field(type = FieldType.Text, name = "content_en", analyzer = "english", searchAnalyzer = "english")
     private String contentEn;
 
-    @Field(type = FieldType.Text, store = true, name = "content_ru", analyzer = "russian_indexing", searchAnalyzer = "russian_searching")
-    private String contentRu;
-
-    @Field(type = FieldType.Text, store = true, name = "content_uk", analyzer = "ukrainian", searchAnalyzer = "ukrainian")
-    private String contentUk;
-//    @Field(type = FieldType.Text, store = true, name = "content_uk_latin", analyzer = "ukrainian_custom", searchAnalyzer = "ukrainian_custom")
-//    private String contentUkLatin;
-
-    @Field(type = FieldType.Text, store = true, name = "content_it", analyzer = "italian", searchAnalyzer = "italian")
-    private String contentIt;
-
-    @Field(type = FieldType.Text, store = true, name = "content_es", analyzer = "spanish", searchAnalyzer = "spanish")
-    private String contentEs;
-
-    @Field(type = FieldType.Text, store = true, name = "content_fr", analyzer = "french", searchAnalyzer = "french")
-    private String contentFr;
-
-    @Field(type = FieldType.Text, store = true, name = "content_de", analyzer = "german", searchAnalyzer = "german")
+    @Field(type = FieldType.Text, name = "content_de", analyzer = "german", searchAnalyzer = "german")
     private String contentDe;
 
-    @Field(type = FieldType.Text, store = true, name = "content_pt", analyzer = "portuguese", searchAnalyzer = "portuguese")
+    @Field(type = FieldType.Text, name = "content_fr", analyzer = "french", searchAnalyzer = "french")
+    private String contentFr;
+
+    @Field(type = FieldType.Text, name = "content_ru", analyzer = "russian_indexing", searchAnalyzer = "russian_searching")
+    private String contentRu;
+
+    @Field(type = FieldType.Text, name = "content_es", analyzer = "spanish", searchAnalyzer = "spanish")
+    private String contentEs;
+
+    @Field(type = FieldType.Text, name = "content_it", analyzer = "italian", searchAnalyzer = "italian")
+    private String contentIt;
+
+    @Field(type = FieldType.Text, name = "content_pt", analyzer = "portuguese", searchAnalyzer = "portuguese")
     private String contentPt;
 
-    @Field(type = FieldType.Text, store = true, name = "server_filename", index = false)
-    private String serverFilename;
+    @Field(type = FieldType.Text, name = "content_uk", analyzer = "ukrainian", searchAnalyzer = "ukrainian")
+    private String contentUk;
 
-    @Field(type = FieldType.Keyword, store = true, name = "database_isbn")
+    // 🔥 RAG metadata
+    @Field(type = FieldType.Integer, name = "chunk_index")
+    private int chunkIndex;
+
+//    TODO remove entirely - no need inside ES, true DataBase ID is already linking it to its original Book entity
+    @Field(type = FieldType.Keyword, name = "database_isbn")
     private String databaseISBN;
 
+    // 🔥 VECTOR
     @Field(type = FieldType.Dense_Vector, dims = 384, similarity = "cosine")
-    private float[] vectorizedContent;
+    private float[] vector;
 }

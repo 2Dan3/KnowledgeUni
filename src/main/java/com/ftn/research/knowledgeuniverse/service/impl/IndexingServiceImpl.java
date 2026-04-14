@@ -41,49 +41,103 @@ public class IndexingServiceImpl implements IndexingService {
 
     private final EmbeddingService embeddingService;
 
+//    @Override
+//    @Transactional
+//    public String indexDocument(MultipartFile documentFile) {
+//        var newEntity = new Book();
+//        var newIndex = new BookIndex();
+//
+//        var title = Objects.requireNonNull(documentFile.getOriginalFilename()).split("\\.")[0];
+//        newIndex.setTitle(title);
+//        newEntity.setTitle(title);
+//
+////        hr/sr, en, de, fr, ru, uk, es, it, pt)
+//        var documentContent = extractDocumentContent(documentFile);
+//        var detectedLang = detectLanguage(documentContent);
+//
+//        switch (detectedLang) {
+//            case "SR" -> newIndex.setContentSr(documentContent);
+//            case "RU" -> newIndex.setContentRu(documentContent);
+//            case "DE" -> newIndex.setContentDe(documentContent);
+//            case "FR" -> newIndex.setContentFr(documentContent);
+//            case "IT" -> newIndex.setContentIt(documentContent);
+//            case "ES" -> newIndex.setContentEs(documentContent);
+//            case "PT" -> newIndex.setContentPt(documentContent);
+//            case "UK" -> newIndex.setContentUk(documentContent);
+//            default -> newIndex.setContentEn(documentContent);
+//        }
+//
+//        newEntity.setContentInNativeLang(documentContent);
+//
+//        var serverFilename = fileService.store(documentFile, UUID.randomUUID().toString());
+//        newIndex.setServerFilename(serverFilename);
+//        newEntity.setServerFilename(serverFilename);
+//
+//        newEntity.setMimeType(detectMimeType(documentFile));
+//        var savedEntity = bookRepository.save(newEntity);
+//
+//        try {
+//            newIndex.setVectorizedContent(embeddingService.getEmbedding(title));
+//        } catch (TranslateException e) {
+////            log.error("Could not calculate vector representation for document with ID: {}",
+////                savedEntity.getISBN();
+//        }
+//        newIndex.setDatabaseISBN(savedEntity.getIsbn());
+//        bookIndexRepository.save(newIndex);
+//
+//        return serverFilename;
+//    }
+
+//    todo replace setcontenten single field with this
+//    switch (lang) {
+//        case "SR" -> doc.setContentSr(chunkText);
+//        case "RU" -> doc.setContentRu(chunkText);
+//        case "DE" -> doc.setContentDe(chunkText);
+//        case "FR" -> doc.setContentFr(chunkText);
+//        case "IT" -> doc.setContentIt(chunkText);
+//        case "ES" -> doc.setContentEs(chunkText);
+//        case "PT" -> doc.setContentPt(chunkText);
+//        case "UK" -> doc.setContentUk(chunkText);
+//        default -> doc.setContentEn(chunkText);
+//    }
+
     @Override
     @Transactional
     public String indexDocument(MultipartFile documentFile) {
-        var newEntity = new Book();
-        var newIndex = new BookIndex();
 
-        var title = Objects.requireNonNull(documentFile.getOriginalFilename()).split("\\.")[0];
-        newIndex.setTitle(title);
-        newEntity.setTitle(title);
+        var book = new Book();
 
-//        hr/sr, en, de, fr, ru, uk, es, it, pt)
-        var documentContent = extractDocumentContent(documentFile);
-        var detectedLang = detectLanguage(documentContent);
+        String title = documentFile.getOriginalFilename().split("\\.")[0];
+        book.setTitle(title);
 
-        switch (detectedLang) {
-            case "SR" -> newIndex.setContentSr(documentContent);
-            case "RU" -> newIndex.setContentRu(documentContent);
-            case "DE" -> newIndex.setContentDe(documentContent);
-            case "FR" -> newIndex.setContentFr(documentContent);
-            case "IT" -> newIndex.setContentIt(documentContent);
-            case "ES" -> newIndex.setContentEs(documentContent);
-            case "PT" -> newIndex.setContentPt(documentContent);
-            case "UK" -> newIndex.setContentUk(documentContent);
-            default -> newIndex.setContentEn(documentContent);
-        }
+//        TODO remove content to DataBase: duplication with ES not needed
+        String content = extractDocumentContent(documentFile);
+        String lang = detectLanguage(content);
 
-        newEntity.setContentInNativeLang(documentContent);
+//        TODO uncomment - set book's majority language
+//        book.setLanguage(lang);
 
-        var serverFilename = fileService.store(documentFile, UUID.randomUUID().toString());
-        newIndex.setServerFilename(serverFilename);
-        newEntity.setServerFilename(serverFilename);
+        String serverFilename = fileService.store(documentFile, UUID.randomUUID().toString());
+        book.setServerFilename(serverFilename);
+        book.setMimeType(detectMimeType(documentFile));
 
-        newEntity.setMimeType(detectMimeType(documentFile));
-        var savedEntity = bookRepository.save(newEntity);
+        var saved = bookRepository.save(book);
 
-        try {
-            newIndex.setVectorizedContent(embeddingService.getEmbedding(title));
-        } catch (TranslateException e) {
-//            log.error("Could not calculate vector representation for document with ID: {}",
-//                savedEntity.getISBN();
-        }
-        newIndex.setDatabaseISBN(savedEntity.getIsbn());
-        bookIndexRepository.save(newIndex);
+        // 🔥 STREAM → CHUNK → QUEUE → BULK
+        RAGStreamingChunker chunker = new RAGStreamingChunker(
+                bulkIndexingService,
+                saved.getIsbn(),
+                title,
+                lang
+        );
+
+        chunker.chunkAndIndex(
+                fileService.loadAsPath(serverFilename),
+                RAGStreamingChunker.Language.valueOf(lang),
+                80,
+                120
+        );
+//        TODO try 80- 120/200 words instead of 100-300 min-max
 
         return serverFilename;
     }

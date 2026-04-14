@@ -28,4 +28,19 @@ public class EmbeddingService {
         double magnitudeB = vectorB.norm2Number().doubleValue();
         return dotProduct / (magnitudeA * magnitudeB);
     }
+
+//    todo add this helper
+//    private String getContentForEmbedding(ChunkDocument doc) {
+//    if (doc.getContentEn() != null) return doc.getContentEn();
+//    if (doc.getContentSr() != null) return doc.getContentSr();
+//    if (doc.getContentDe() != null) return doc.getContentDe();
+//    if (doc.getContentFr() != null) return doc.getContentFr();
+//    if (doc.getContentRu() != null) return doc.getContentRu();
+//    if (doc.getContentEs() != null) return doc.getContentEs();
+//    if (doc.getContentIt() != null) return doc.getContentIt();
+//    if (doc.getContentPt() != null) return doc.getContentPt();
+//    if (doc.getContentUk() != null) return doc.getContentUk();
+//
+//    return "";
+//}
 }
