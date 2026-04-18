@@ -7,9 +7,11 @@ import com.ftn.research.knowledgeuniverse.model.entity.Book;
 import com.ftn.research.knowledgeuniverse.model.index.BookIndex;
 import com.ftn.research.knowledgeuniverse.repository.entity.BookRepository;
 import com.ftn.research.knowledgeuniverse.repository.index.BookIndexRepository;
+import com.ftn.research.knowledgeuniverse.service.BulkIndexingService;
 import com.ftn.research.knowledgeuniverse.service.FileService;
 import com.ftn.research.knowledgeuniverse.service.IndexingService;
 import com.ftn.research.knowledgeuniverse.service.impl.EmbeddingService;
+import com.ftn.research.knowledgeuniverse.util.RAGStreamingChunker;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,8 @@ public class IndexingServiceImpl implements IndexingService {
     private final LanguageDetector languageDetector;
 
     private final EmbeddingService embeddingService;
+
+    private final BulkIndexingService bulkIndexingService;
 
 //    @Override
 //    @Transactional
@@ -110,12 +114,8 @@ public class IndexingServiceImpl implements IndexingService {
         String title = documentFile.getOriginalFilename().split("\\.")[0];
         book.setTitle(title);
 
-//        TODO remove content to DataBase: duplication with ES not needed
         String content = extractDocumentContent(documentFile);
         String lang = detectLanguage(content);
-
-//        TODO uncomment - set book's majority language
-//        book.setLanguage(lang);
 
         String serverFilename = fileService.store(documentFile, UUID.randomUUID().toString());
         book.setServerFilename(serverFilename);
@@ -123,7 +123,7 @@ public class IndexingServiceImpl implements IndexingService {
 
         var saved = bookRepository.save(book);
 
-        // 🔥 STREAM → CHUNK → QUEUE → BULK
+        // 🔥 PASS LANGUAGE INTO CHUNKER
         RAGStreamingChunker chunker = new RAGStreamingChunker(
                 bulkIndexingService,
                 saved.getIsbn(),
@@ -137,7 +137,6 @@ public class IndexingServiceImpl implements IndexingService {
                 80,
                 120
         );
-//        TODO try 80- 120/200 words instead of 100-300 min-max
 
         return serverFilename;
     }

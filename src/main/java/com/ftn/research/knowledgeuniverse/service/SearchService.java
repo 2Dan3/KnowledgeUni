@@ -12,5 +12,5 @@ public interface SearchService {
 
     Page<BookIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN);
 
-    Page<BookIndex> advancedSearch(List<String> expression, Pageable pageable);
+//    Page<BookIndex> advancedSearch(List<String> expression, Pageable pageable);
 }

@@ -13,6 +13,12 @@
 
     "analyzer": {
 
+      "icu_analyzer": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": ["lowercase", "icu_normalizer", "icu_folding"]
+      },
+
       "italian": {
         "type": "custom",
         "tokenizer": "icu_tokenizer",

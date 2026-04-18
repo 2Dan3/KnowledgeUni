@@ -23,8 +23,8 @@ public class Book {
     private String title;
 
 //    TODO uncomment - majority text language store inside DataBase
-//    @Column(name = "lang")
-//    private String language;
+    @Column(name = "lang")
+    private String language;
 
 //    @Column(name = "content_native")
     @Transient

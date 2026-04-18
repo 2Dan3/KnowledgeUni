@@ -1,29 +1,19 @@
 package com.ftn.research.knowledgeuniverse.service.impl;
 
-import ai.djl.translate.TranslateException;
-import co.elastic.clients.elasticsearch._types.KnnQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import com.ftn.research.knowledgeuniverse.exceptionhandling.exception.MalformedQueryException;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+//import co.elastic.clients.elasticsearch._types.rank.RrfRank;
 import com.ftn.research.knowledgeuniverse.model.index.BookIndex;
 import com.ftn.research.knowledgeuniverse.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.common.unit.Fuzziness;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.HighlightQuery;
-import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
-import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
-import org.springframework.data.elasticsearch.core.query.highlight.HighlightParameters;
+import org.apache.tika.language.detect.LanguageDetector;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,75 +22,22 @@ import java.util.Map;
 @Slf4j
 public class SearchServiceImpl implements SearchService {
 
-    private final ElasticsearchOperations elasticsearchTemplate;
-
+    private final ElasticsearchClient client;
     private final EmbeddingService embeddingService;
-
-//    @Override
-//    public Page<BookIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
-//
-//        if (isKNN) {
-//            try {
-//                return searchByVector(embeddingService.getEmbedding(String.join(" ", keywords)));
-//            } catch (TranslateException e) {
-//                log.error("Vectorization failed", e);
-//                return Page.empty();
-//            }
-//        }
-//
-//        // 1️⃣ Build query
-//        NativeQuery query = new NativeQueryBuilder()
-//                .withQuery(buildSimpleSearchQuery(keywords))
-//                .withPageable(pageable)
-//                .build();
-//
-//        // 2️⃣ Attach highlighting
-//        query.setHighlightQuery(new HighlightQuery(buildHighlight(), BookIndex.class));
-//
-//        return runQuery(query);
-//    }
-
-    private Query buildHybridQuery(List<String> tokens, List<Float> vector) {
-
-        BoolQuery.Builder bool = new BoolQuery.Builder();
-
-        String queryText = String.join(" ", tokens);
-
-        // 🔥 BM25 (stronger)
-        bool.should(s -> s.multiMatch(m -> m
-                .query(queryText)
-                .fields(
-                        "content_sr^2.0",
-                        "content_en^2.0",
-                        "content_de^2.0",
-                        "content_fr^2.0",
-                        "content_ru^2.0",
-                        "content_es^2.0",
-                        "content_it^2.0",
-                        "content_pt^2.0",
-                        "content_uk^2.0",
-                        "title^3.0"
-                )
-        ));
-
-        // 🔥 Vector (weaker)
-        bool.should(s -> s.knn(k -> k
-                .field("vector")
-                .queryVector(vector)
-                .k(20)
-                .numCandidates(100)
-                .boost(0.7f)
-        ));
-
-        return bool.build()._toQuery();
-    }
+    private final LanguageDetector languageDetector;
 
     @Override
-    public Page<ChunkDocument> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
+    public Page<BookIndex> simpleSearch(List<String> keywords, Pageable pageable, boolean isKNN) {
 
         String queryText = String.join(" ", keywords);
 
-        // 1️⃣ Get embedding
+        // 🔥 detect query language
+        String queryLang = languageDetector.detect(queryText).getLanguage().toUpperCase();
+        if (queryLang.equals("HR")) queryLang = "SR";
+
+        String boostedField = "content_" + queryLang.toLowerCase() + "^5";
+
+        // 🔥 embedding
         float[] embedding;
         try {
             embedding = embeddingService.getEmbedding(queryText);
@@ -109,276 +46,145 @@ public class SearchServiceImpl implements SearchService {
             return Page.empty();
         }
 
-        // 2️⃣ Convert to List<Float>
         List<Float> vector = new ArrayList<>(embedding.length);
-        for (float f : embedding) {
-            vector.add(f);
-        }
+        for (float f : embedding) vector.add(f);
 
-        // 3️⃣ 🔥 USE HYBRID QUERY HERE (THIS IS THE ONLY CHANGE)
-        NativeQuery query = new NativeQueryBuilder()
-                .withQuery(buildHybridQuery(keywords, vector))
-                .withPageable(pageable)
-                .build();
+        try {
+            SearchRequest request = SearchRequest.of(s -> s
+                    .index("book_index")
+                    .from((int) pageable.getOffset())
+                    .size(pageable.getPageSize())
 
-        // 4️⃣ Keep highlight EXACTLY as before
-        query.setHighlightQuery(new HighlightQuery(buildHighlight(), ChunkDocument.class));
+                    // 🔥 BM25 multilingual
+                    .query(q -> q
+                            .multiMatch(m -> m
+                                    .query(queryText)
+                                    .fields(
+                                            "title^3",
+                                            boostedField,
+                                            "content_en^2",
+                                            "content_sr^2",
+                                            "content_de^2",
+                                            "content_fr^2",
+                                            "content_ru^2",
+                                            "content_es^2",
+                                            "content_it^2",
+                                            "content_pt^2",
+                                            "content_uk^2"
+                                    )
+                            )
+                    )
 
-        // 5️⃣ Execute
-        return runQuery(query);
+                    // 🔥 vector
+                    .knn(k -> k
+                            .field("vector")
+                            .queryVector(vector)
+                            .k(50)
+                            .numCandidates(200)
+                    )
 
+                    // 🔥 TRUE HYBRID (RRF)
+                    .rank(r -> r
+                            .rrf(rrf -> rrf
+                                    .rankWindowSize(50L) // 40-100 lower = unstable rank, higher = noise
+                                    .rankConstant(60L) // 50-80 lower = more vector influence, higher = more bm25 influence
+                            )
+                    )
+            );
 
-//        todo where to put this if i replaced buildSimple w/ hybridSearch
-//        float[] embedding = embeddingService.getEmbedding(queryText);
-//
-//        List<Float> vector = new ArrayList<>();
-//        for (float f : embedding) vector.add(f);
-//
-//        NativeQuery query = new NativeQueryBuilder()
-//                .withQuery(buildHybridQuery(tokens, vector))
-//                .withPageable(pageable)
-//                .build();
-    }
+            SearchResponse<BookIndex> response =
+                    client.search(request, BookIndex.class);
 
-    @Override
-    public Page<BookIndex> advancedSearch(List<String> expression, Pageable pageable) {
+            List<BookIndex> results = new ArrayList<>();
+            List<String> ids = new ArrayList<>();
 
-        if (expression.size() != 3) {
-            throw new MalformedQueryException("Search query malformed.");
-        }
+            response.hits().hits().forEach(hit -> {
+                if (hit.source() != null) {
+                    results.add(hit.source());
+                }
+                if (hit.id() != null) {
+                    ids.add(hit.id());
+                }
+            });
 
-        String operation = expression.get(1);
-        expression.remove(1);
+            SearchRequest highlightRequest = SearchRequest.of(s -> s
+                    .index("book_index")
+                    .size(ids.size())
 
-        NativeQuery query = new NativeQueryBuilder()
-                .withQuery(buildAdvancedSearchQuery(expression, operation))
-                .withPageable(pageable)
-                .build();
+                    // 🔥 restrict to retrieved docs
+                    .query(q -> q
+                            .ids(i -> i.values(ids))
+                    )
 
-        query.setHighlightQuery(new HighlightQuery(buildHighlight(), BookIndex.class));
+                    // 🔥 SAME BM25 query (important for relevance of snippets)
+                    .highlight(h -> h
+                            .fields("content", f -> f
+                                    .fragmentSize(150)
+                                    .numberOfFragments(5)
+                            )
+                            .fields("content_en", f -> f
+                                    .fragmentSize(150)
+                                    .numberOfFragments(5)
+                            )
+                            .fields("content_sr", f -> f.fragmentSize(150).numberOfFragments(5))
+                            .fields("content_de", f -> f.fragmentSize(150).numberOfFragments(5))
+                            .fields("content_fr", f -> f.fragmentSize(150).numberOfFragments(5))
+                            .fields("content_ru", f -> f.fragmentSize(150).numberOfFragments(5))
+                            .fields("content_es", f -> f.fragmentSize(150).numberOfFragments(5))
+                            .fields("content_it", f -> f.fragmentSize(150).numberOfFragments(5))
+                            .fields("content_pt", f -> f.fragmentSize(150).numberOfFragments(5))
+                            .fields("content_uk", f -> f.fragmentSize(150).numberOfFragments(5))
+//                            TODO uncomment to tune results
+//                            .numberOfFragments(3)
+//                            .requireFieldMatch(false)
+//                            .preTags("<em>")
+//                            .postTags("</em>")
+                    )
+            );
 
-        return runQuery(query);
-    }
+            SearchResponse<BookIndex> highlightResponse =
+                    client.search(highlightRequest, BookIndex.class);
 
-    public Page<BookIndex> searchByVector(float[] queryVector) {
+            Map<String, BookIndex> resultMap = new HashMap<>();
 
-        // ✅ Convert float[] to List<Float>
-        List<Float> floatList = new ArrayList<>(queryVector.length);
-        for (float f : queryVector) {
-            floatList.add(f); // autobox to Float
-        }
-
-        // 1️⃣ Build KNN query
-        var knnQuery = new KnnQuery.Builder()
-                .field("vectorizedContent")
-                .queryVector(floatList)
-                .numCandidates(100)
-                .k(10)
-                .boost(10.0f)
-                .build();
-
-        // 2️⃣ Build NativeQuery
-        NativeQuery searchQuery = NativeQuery.builder()
-                .withKnnQuery(knnQuery)
-                .withMaxResults(5)
-                .build();
-
-        // 3️⃣ Attach highlighting for content fields
-        searchQuery.setHighlightQuery(new HighlightQuery(buildHighlight(), BookIndex.class));
-
-        // 4️⃣ Run query & apply highlights
-        return runQuery(searchQuery);
-    }
-
-    // =========================
-    // Build highlight for content_sr & content_en
-    // =========================
-//    private Highlight buildHighlight() {
-//        return new Highlight(
-//                HighlightParameters.builder()
-//                        .withPreTags("<em>")
-//                        .withPostTags("</em>")
-//                        .withFragmentSize(100)
-//                        .withNumberOfFragments(10)
-//                        .build(),
-//                List.of(
-//                        new HighlightField("content_sr"),
-//                        new HighlightField("content_en"),
-//                        new HighlightField("content_de"),
-//                        new HighlightField("content_ru"),
-//                        new HighlightField("content_fr"),
-//                        new HighlightField("content_es"),
-//                        new HighlightField("content_it"),
-//                        new HighlightField("content_pt"),
-//                        new HighlightField("content_uk")
-//                )
-//        );
-//    }
-
-    private Highlight buildHighlight() {
-        return new Highlight(
-                HighlightParameters.builder()
-                        .withPreTags("<em>")
-                        .withPostTags("</em>")
-                        .withFragmentSize(150)
-                        .withNumberOfFragments(5)
-                        .build(),
-                List.of(new HighlightField("content"))
-        );
-    }
-
-    // =========================
-    // Simple search query
-    // =========================
-    private co.elastic.clients.elasticsearch._types.query_dsl.Query buildSimpleSearchQuery(List<String> tokens) {
-
-        BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
-
-        for (String token : tokens) {
-            // Fuzzy match on title
-            boolBuilder.should(s -> s.match(m -> m.field("title")
-                    .fuzziness(Fuzziness.ONE.asString())
-                    .query(token)));
-
-            // Match on content_sr with boost
-            boolBuilder.should(s -> s.match(m -> m.field("content_sr")
-                    .query(token)
-                    .boost(0.5f)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_en")
-                    .query(token)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_de")
-                    .query(token)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_fr")
-                    .query(token)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_ru")
-                    .query(token)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_es")
-                    .query(token)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_it")
-                    .query(token)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_pt")
-                    .query(token)));
-
-            // Match on content_en
-            boolBuilder.should(s -> s.match(m -> m.field("content_uk")
-                    .query(token)));
-        }
-
-        return boolBuilder.build()._toQuery();
-    }
-
-    // =========================
-    // Advanced search query
-    // =========================
-    private co.elastic.clients.elasticsearch._types.query_dsl.Query buildAdvancedSearchQuery(List<String> operands, String operation) {
-
-        BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
-
-        var field1 = operands.get(0).split(":")[0];
-        var value1 = operands.get(0).split(":")[1];
-        var field2 = operands.get(1).split(":")[0];
-        var value2 = operands.get(1).split(":")[1];
-
-        switch (operation) {
-            case "AND" -> {
-                boolBuilder.must(m -> m.match(mm -> mm.field(field1)
-                        .fuzziness(Fuzziness.ONE.asString())
-                        .query(value1)));
-                boolBuilder.must(m -> m.match(mm -> mm.field(field2)
-                        .query(value2)));
-            }
-            case "OR" -> {
-                boolBuilder.should(m -> m.match(mm -> mm.field(field1)
-                        .fuzziness(Fuzziness.ONE.asString())
-                        .query(value1)));
-                boolBuilder.should(m -> m.match(mm -> mm.field(field2)
-                        .query(value2)));
-            }
-            case "NOT" -> {
-                boolBuilder.must(m -> m.match(mm -> mm.field(field1)
-                        .fuzziness(Fuzziness.ONE.asString())
-                        .query(value1)));
-                boolBuilder.mustNot(m -> m.match(mm -> mm.field(field2)
-                        .query(value2)));
-            }
-        }
-
-        return boolBuilder.build()._toQuery();
-    }
-
-    // =========================
-    // Execute query + apply highlight
-    // =========================
-//    private Page<BookIndex> runQuery(NativeQuery searchQuery) {
-//
-//        SearchHits<BookIndex> searchHits =
-//                elasticsearchTemplate.search(searchQuery, BookIndex.class);
-//
-//        List<BookIndex> results = new ArrayList<>();
-//
-//        for (SearchHit<BookIndex> hit : searchHits) {
-////            System.out.println(hit.getHighlightFields());
-//
-//            // Apply highlight if available
-//            Map<String, List<String>> highlight = hit.getHighlightFields();
-//            BookIndex book = hit.getContent();
-//
-//            highlight.forEach((field, fragments) -> {
-//                String combined = String.join("...<br/><br/>...", fragments);
-//
-//                switch (field) {
-//                    case "contentSr" -> book.setContentSr(combined);
-//                    case "contentEn" -> book.setContentEn(combined);
-//                    case "contentDe" -> book.setContentDe(combined);
-//                    case "contentRu" -> book.setContentRu(combined);
-//                    case "contentFr" -> book.setContentFr(combined);
-//                    case "contentEs" -> book.setContentEs(combined);
-//                    case "contentIt" -> book.setContentIt(combined);
-//                    case "contentPt" -> book.setContentPt(combined);
-//                    case "contentUk" -> book.setContentUk(combined);
-//                }
-//            });
-//
-//            results.add(book);
-//        }
-////        System.out.println(searchQuery.getQuery());
-//        return new PageImpl<>(results, searchQuery.getPageable(), searchHits.getTotalHits());
-//    }
-
-    private Page<ChunkDocument> runQuery(NativeQuery query) {
-
-        SearchHits<ChunkDocument> hits =
-                elasticsearchTemplate.search(query, ChunkDocument.class);
-
-        List<ChunkDocument> results = new ArrayList<>();
-
-        for (SearchHit<ChunkDocument> hit : hits) {
-
-            ChunkDocument doc = hit.getContent();
-
-            Map<String, List<String>> highlight = hit.getHighlightFields();
-
-            if (highlight.containsKey("content")) {
-                doc.setContent(String.join("...<br/>...", highlight.get("content")));
+            // original results
+            for (var hit : response.hits().hits()) {
+                if (hit.source() != null) {
+                    resultMap.put(hit.id(), hit.source());
+                }
             }
 
-            results.add(doc);
-        }
+            // 🔥 apply highlights
+            for (var hit : highlightResponse.hits().hits()) {
 
-        return new PageImpl<>(results, query.getPageable(), hits.getTotalHits());
+                BookIndex doc = resultMap.get(hit.id());
+                if (doc == null) continue;
+
+                if (hit.highlight() != null) {
+
+                    List<String> allFragments = new ArrayList<>();
+
+                    hit.highlight().forEach((field, fragments) -> {
+                        allFragments.addAll(fragments);
+                    });
+
+                    if (!allFragments.isEmpty()) {
+                        doc.setContent(String.join("...<br/>...", allFragments));
+                    }
+                    // ⚠️ fallback: keep original chunk content if no highlight
+                }
+            }
+
+//            TODO check this line
+            long total = response.hits().total() != null
+                    ? response.hits().total().value()
+                    : results.size();
+
+            return new PageImpl<>(results, pageable, total);
+
+        } catch (Exception e) {
+            log.error("Search failed", e);
+            return Page.empty();
+        }
     }
 }

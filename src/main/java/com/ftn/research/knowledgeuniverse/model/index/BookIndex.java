@@ -20,7 +20,7 @@ public class BookIndex {
     @Field(type = FieldType.Keyword, name = "book_id")
     private String bookId;
 
-    @Field(type = FieldType.Text, store = true, name = "title")
+    @Field(type = FieldType.Text, store = true, name = "title", analyzer = "icu_analyzer")
     private String title;
 
     // 🔥 KEEP ALL LANGUAGE FIELDS (your analyzers are GOLD)
@@ -56,10 +56,13 @@ public class BookIndex {
     private int chunkIndex;
 
 //    TODO remove entirely - no need inside ES, true DataBase ID is already linking it to its original Book entity
-    @Field(type = FieldType.Keyword, name = "database_isbn")
-    private String databaseISBN;
+//    @Field(type = FieldType.Keyword, name = "database_isbn")
+//    private String databaseISBN;
 
     // 🔥 VECTOR
-    @Field(type = FieldType.Dense_Vector, dims = 384, similarity = "cosine")
+    @Field(type = FieldType.Dense_Vector, dims = 384, similarity = "cosine", index = true)
     private float[] vector;
+
+    @Field(type = FieldType.Text, name = "content", analyzer = "icu_analyzer")
+    private String content;
 }

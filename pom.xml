@@ -53,6 +53,13 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+
+			<!-- Overriding the default version that SpringBoot 3.1.5 gets, with 8.15.0 Java client -->
+			<dependency>
+				<groupId>co.elastic.clients</groupId>
+				<artifactId>elasticsearch-java</artifactId>
+				<version>8.15.0</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -164,10 +171,20 @@
 		</dependency>
 
 		<!-- Elasticsearch -->
+<!--		<dependency>-->
+<!--			<groupId>org.elasticsearch</groupId>-->
+<!--			<artifactId>elasticsearch</artifactId>-->
+<!--			<version>8.13.3</version>-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>8.13.3</version>
+			<version>8.15.0</version>
+		</dependency>
+		<dependency>
+			<groupId>co.elastic.clients</groupId>
+			<artifactId>elasticsearch-java</artifactId>
+			<version>8.15.0</version>
 		</dependency>
 
 		<dependency>

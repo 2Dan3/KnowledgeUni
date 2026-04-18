@@ -1,5 +1,7 @@
 package com.ftn.research.knowledgeuniverse.util;
 
+import com.ftn.research.knowledgeuniverse.model.index.BookIndex;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -389,7 +391,7 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
 
     private void submitChunk(String chunkText, String language, int chunkIndex) {
 
-        ChunkDocument doc = new ChunkDocument();
+        BookIndex doc = new BookIndex();
 
         doc.setBookId(bookId);
         doc.setTitle(title);

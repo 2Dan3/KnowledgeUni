@@ -3,3 +3,7 @@ FROM docker.elastic.co/elasticsearch/elasticsearch:8.15.2
 RUN elasticsearch-plugin install --batch analysis-icu
 
 RUN elasticsearch-plugin install --batch analysis-ukrainian
+
+# RUN elasticsearch-plugin install --batch https://artifacts.elastic.co/downloads/elasticsearch-plugins/analysis-icu/analysis-icu-8.15.2.zip
+
+# RUN elasticsearch-plugin install --batch https://artifacts.elastic.co/downloads/elasticsearch-plugins/analysis-ukrainian/analysis-ukrainian-8.15.2.zip
