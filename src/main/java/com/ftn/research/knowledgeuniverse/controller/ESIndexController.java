@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Objects;
 
 @RestController
@@ -24,7 +25,7 @@ public class ESIndexController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BookDocumentFileResponseDTO addDocumentFile(@ModelAttribute BookDocumentFileDTO documentFile) {
+    public BookDocumentFileResponseDTO addDocumentFile(@ModelAttribute BookDocumentFileDTO documentFile) throws IOException {
 
         // Store the PDF file
         var pdfServerFilename = indexingService.indexDocument(documentFile.file());

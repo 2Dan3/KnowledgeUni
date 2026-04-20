@@ -107,7 +107,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     @Transactional
-    public String indexDocument(MultipartFile documentFile) {
+    public String indexDocument(MultipartFile documentFile) throws IOException {
 
         var book = new Book();
 
@@ -116,6 +116,8 @@ public class IndexingServiceImpl implements IndexingService {
 
         String content = extractDocumentContent(documentFile);
         String lang = detectLanguage(content);
+//        book.setContentInNativeLang(content);
+        book.setLanguage(lang);
 
         String serverFilename = fileService.store(documentFile, UUID.randomUUID().toString());
         book.setServerFilename(serverFilename);
@@ -123,8 +125,8 @@ public class IndexingServiceImpl implements IndexingService {
 
         var saved = bookRepository.save(book);
 
-        // 🔥 PASS LANGUAGE INTO CHUNKER
         RAGStreamingChunker chunker = new RAGStreamingChunker(
+                languageDetector,
                 bulkIndexingService,
                 saved.getIsbn(),
                 title,
@@ -132,7 +134,8 @@ public class IndexingServiceImpl implements IndexingService {
         );
 
         chunker.chunkAndIndex(
-                fileService.loadAsPath(serverFilename),
+                title,
+                fileService.load(serverFilename),
                 RAGStreamingChunker.Language.valueOf(lang),
                 80,
                 120

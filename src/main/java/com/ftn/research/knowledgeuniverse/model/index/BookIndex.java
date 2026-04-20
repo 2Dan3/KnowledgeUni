@@ -1,6 +1,7 @@
 package com.ftn.research.knowledgeuniverse.model.index;
 
 import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -23,7 +24,6 @@ public class BookIndex {
     @Field(type = FieldType.Text, store = true, name = "title", analyzer = "icu_analyzer")
     private String title;
 
-    // 🔥 KEEP ALL LANGUAGE FIELDS (your analyzers are GOLD)
     @Field(type = FieldType.Text, name = "content_sr", analyzer = "serbian_simple", searchAnalyzer = "serbian_simple")
     private String contentSr;
 
@@ -51,7 +51,6 @@ public class BookIndex {
     @Field(type = FieldType.Text, name = "content_uk", analyzer = "ukrainian", searchAnalyzer = "ukrainian")
     private String contentUk;
 
-    // 🔥 RAG metadata
     @Field(type = FieldType.Integer, name = "chunk_index")
     private int chunkIndex;
 
@@ -59,10 +58,13 @@ public class BookIndex {
 //    @Field(type = FieldType.Keyword, name = "database_isbn")
 //    private String databaseISBN;
 
-    // 🔥 VECTOR
     @Field(type = FieldType.Dense_Vector, dims = 384, similarity = "cosine", index = true)
     private float[] vector;
 
     @Field(type = FieldType.Text, name = "content", analyzer = "icu_analyzer")
     private String content;
+
+//    TODO consider making it @Field instead of @Transient (possible relevance boosting on search)
+    @Transient
+    private String chunkLanguage;
 }

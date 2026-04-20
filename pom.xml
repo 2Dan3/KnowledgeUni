@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.1.5</version>
+		<version>3.3.2</version>
 		<relativePath/>
 	</parent>
 
@@ -176,11 +176,11 @@
 <!--			<artifactId>elasticsearch</artifactId>-->
 <!--			<version>8.13.3</version>-->
 <!--		</dependency>-->
-		<dependency>
-			<groupId>org.elasticsearch</groupId>
-			<artifactId>elasticsearch</artifactId>
-			<version>8.15.0</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.elasticsearch</groupId>-->
+<!--			<artifactId>elasticsearch</artifactId>-->
+<!--			<version>8.15.0</version>-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>co.elastic.clients</groupId>
 			<artifactId>elasticsearch-java</artifactId>

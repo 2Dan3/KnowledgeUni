@@ -17,6 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 @Slf4j
 public class BulkIndexingServiceImpl implements BulkIndexingService {
 
+//    private final BlockingQueue<BookIndex> queue = new LinkedBlockingQueue<>(5000);
     private final BlockingQueue<BookIndex> queue = new LinkedBlockingQueue<>(5000);
 
     private final ElasticsearchClient client;
@@ -46,7 +47,8 @@ public class BulkIndexingServiceImpl implements BulkIndexingService {
         for (int i = 0; i < workers; i++) {
             new Thread(() -> {
 
-                List<BookIndex> batch = new ArrayList<>(500);
+//                List<BookIndex> batch = new ArrayList<>(500);
+                List<BookIndex> batch = new ArrayList<>(5000);
 
                 while (true) {
                     try {
@@ -73,28 +75,28 @@ public class BulkIndexingServiceImpl implements BulkIndexingService {
 
             for (BookIndex doc : batch) {
 
-                doc.setVector(
-                        embeddingService.getEmbedding(
-                                doc.getTitle() + ". " + doc.getContent()
-                        )
-                );
+                String textForEmbedding =
+                        "Title: " + doc.getTitle() + "\n" +
+                        "Content: " + doc.getContent();
+
+                doc.setVector(embeddingService.getEmbedding(textForEmbedding));
 
                 Map<String, Object> json = new HashMap<>();
 
                 json.put("book_id", doc.getBookId());
                 json.put("title", doc.getTitle());
                 json.put("chunk_index", doc.getChunkIndex());
-                json.put("language", doc.getLanguage());
+                json.put("language", doc.getChunkLanguage());
 
-                json.put("content_sr", doc.getLanguage().equals("SR") ? doc.getContent() : null);
-                json.put("content_en", doc.getLanguage().equals("EN") ? doc.getContent() : null);
-                json.put("content_de", doc.getLanguage().equals("DE") ? doc.getContent() : null);
-                json.put("content_fr", doc.getLanguage().equals("FR") ? doc.getContent() : null);
-                json.put("content_ru", doc.getLanguage().equals("RU") ? doc.getContent() : null);
-                json.put("content_es", doc.getLanguage().equals("ES") ? doc.getContent() : null);
-                json.put("content_it", doc.getLanguage().equals("IT") ? doc.getContent() : null);
-                json.put("content_pt", doc.getLanguage().equals("PT") ? doc.getContent() : null);
-                json.put("content_uk", doc.getLanguage().equals("UK") ? doc.getContent() : null);
+                json.put("content_sr", doc.getChunkLanguage().equals("SR") ? doc.getContent() : null);
+                json.put("content_en", doc.getChunkLanguage().equals("EN") ? doc.getContent() : null);
+                json.put("content_de", doc.getChunkLanguage().equals("DE") ? doc.getContent() : null);
+                json.put("content_fr", doc.getChunkLanguage().equals("FR") ? doc.getContent() : null);
+                json.put("content_ru", doc.getChunkLanguage().equals("RU") ? doc.getContent() : null);
+                json.put("content_es", doc.getChunkLanguage().equals("ES") ? doc.getContent() : null);
+                json.put("content_it", doc.getChunkLanguage().equals("IT") ? doc.getContent() : null);
+                json.put("content_pt", doc.getChunkLanguage().equals("PT") ? doc.getContent() : null);
+                json.put("content_uk", doc.getChunkLanguage().equals("UK") ? doc.getContent() : null);
 
                 json.put("content", doc.getContent());
                 json.put("vector", doc.getVector());

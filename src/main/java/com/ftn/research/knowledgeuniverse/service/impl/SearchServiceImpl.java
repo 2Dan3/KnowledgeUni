@@ -31,13 +31,13 @@ public class SearchServiceImpl implements SearchService {
 
         String queryText = String.join(" ", keywords);
 
-        // 🔥 detect query language
+        // detecting query language
         String queryLang = languageDetector.detect(queryText).getLanguage().toUpperCase();
         if (queryLang.equals("HR")) queryLang = "SR";
 
         String boostedField = "content_" + queryLang.toLowerCase() + "^5";
 
-        // 🔥 embedding
+        // embedding
         float[] embedding;
         try {
             embedding = embeddingService.getEmbedding(queryText);
@@ -55,7 +55,7 @@ public class SearchServiceImpl implements SearchService {
                     .from((int) pageable.getOffset())
                     .size(pageable.getPageSize())
 
-                    // 🔥 BM25 multilingual
+                    // BM25 multilingual
                     .query(q -> q
                             .multiMatch(m -> m
                                     .query(queryText)
@@ -75,7 +75,7 @@ public class SearchServiceImpl implements SearchService {
                             )
                     )
 
-                    // 🔥 vector
+                    // vector
                     .knn(k -> k
                             .field("vector")
                             .queryVector(vector)
@@ -83,7 +83,7 @@ public class SearchServiceImpl implements SearchService {
                             .numCandidates(200)
                     )
 
-                    // 🔥 TRUE HYBRID (RRF)
+                    // hybrid w/RRF
                     .rank(r -> r
                             .rrf(rrf -> rrf
                                     .rankWindowSize(50L) // 40-100 lower = unstable rank, higher = noise
@@ -111,12 +111,12 @@ public class SearchServiceImpl implements SearchService {
                     .index("book_index")
                     .size(ids.size())
 
-                    // 🔥 restrict to retrieved docs
+                    // restriction to retrieved docs
                     .query(q -> q
                             .ids(i -> i.values(ids))
                     )
 
-                    // 🔥 SAME BM25 query (important for relevance of snippets)
+                    // the same BM25 query (important for relevance of snippets)
                     .highlight(h -> h
                             .fields("content", f -> f
                                     .fragmentSize(150)
@@ -154,7 +154,7 @@ public class SearchServiceImpl implements SearchService {
                 }
             }
 
-            // 🔥 apply highlights
+            // applying of highlights
             for (var hit : highlightResponse.hits().hits()) {
 
                 BookIndex doc = resultMap.get(hit.id());
@@ -171,7 +171,7 @@ public class SearchServiceImpl implements SearchService {
                     if (!allFragments.isEmpty()) {
                         doc.setContent(String.join("...<br/>...", allFragments));
                     }
-                    // ⚠️ fallback: keep original chunk content if no highlight
+                    // fallback; keep original chunk content if no highlight
                 }
             }
 

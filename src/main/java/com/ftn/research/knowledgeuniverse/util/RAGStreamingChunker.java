@@ -1,20 +1,37 @@
 package com.ftn.research.knowledgeuniverse.util;
 
 import com.ftn.research.knowledgeuniverse.model.index.BookIndex;
+import com.ftn.research.knowledgeuniverse.service.BulkIndexingService;
+import org.apache.tika.language.detect.LanguageDetector;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 
 public class RAGStreamingChunker {
 
+    private LanguageDetector languageDetector;
+    private BulkIndexingService bulkIndexingService;
+    private String bookId;
+    private String bookTitle;
+    private String bookMajorityLanguage;
+
     // =========================
     // CONFIG
     // =========================
     private static final int OVERLAP_WORDS_RATIO = 30; // ~30% overlap
+
+    public RAGStreamingChunker(LanguageDetector languageDetector, BulkIndexingService bulkIndexingService, String bookId, String bookTitle, String bookMainLanguage) {
+        this.languageDetector = languageDetector;
+        this.bulkIndexingService = bulkIndexingService;
+        this.bookId = bookId;
+        this.bookTitle = bookTitle;
+        this.bookMajorityLanguage = bookMainLanguage;
+    }
 
     public enum Language {
         EN, DE,
@@ -40,11 +57,11 @@ public class RAGStreamingChunker {
     // =========================
     // THREAD POOL (Elasticsearch indexing)
     // =========================
-    private final ExecutorService executor;
-
-    public RAGStreamingChunker(int threads) {
-        this.executor = Executors.newFixedThreadPool(threads);
-    }
+//    private final ExecutorService executor;
+//
+//    public RAGStreamingChunker(int threads) {
+//        this.executor = Executors.newFixedThreadPool(threads);
+//    }
 
     // =========================
     // PUBLIC API
@@ -148,14 +165,15 @@ public class RAGStreamingChunker {
 //        executor.shutdown();
 //    }
 
-//    TODO new chunkandindex w/ sentence-level language awareness and force chunking on its change
-public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) throws IOException {
+//  new chunkandindex w/ sentence-level language awareness and force chunking on its change
+public void chunkAndIndex(String title, InputStream file, Language lang, int minWords, int maxWords) throws IOException {
 
     Set<String> abbreviations = ABBR.getOrDefault(lang, ABBR.get(Language.EN));
+//    try Channels.newChannel(file)
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(file, StandardCharsets.UTF_8))) {
 
-    try (FileChannel channel = FileChannel.open(file)) {
-
-        ByteBuffer buffer = ByteBuffer.allocateDirect(16 * 1024);
+        char[] buffer = new char[16 * 1024];
+        int read;
 
         StringBuilder sentence = new StringBuilder(2048);
         StringBuilder chunk = new StringBuilder(8192);
@@ -167,15 +185,13 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
 
         boolean inWord = false;
 
-        // 🔥 NEW
         String currentChunkLang = null;
         int chunkIndex = 0;
 
-        while (channel.read(buffer) > 0) {
-            buffer.flip();
+        while ((read = reader.read(buffer)) != -1) {
 
-            while (buffer.hasRemaining()) {
-                char c = (char) buffer.get();
+            for (int i = 0; i < read; i++) {
+                char c = buffer[i];
 
                 sentence.append(c);
                 paragraph.append(c);
@@ -200,7 +216,7 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
 
                     String sentenceText = sentence.toString().trim();
 
-                    // 🔥 OPTIMIZED LANGUAGE DETECTION
+                    // (optimized) language detection
                     String sentenceLang;
                     if (sentenceText.length() > 40) {
                         sentenceLang = detectLanguage(sentenceText);
@@ -208,16 +224,16 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
                         sentenceLang = currentChunkLang != null ? currentChunkLang : lang.name();
                     }
 
-                    // 🔥 INIT FIRST LANG
+                    // init first language
                     if (currentChunkLang == null) {
                         currentChunkLang = sentenceLang;
                     }
 
-                    // 🔥 LANGUAGE SWITCH → FORCE CHUNK BREAK
+                    // language switching causes forced chunk break
                     if (!sentenceLang.equals(currentChunkLang)) {
 
                         if (chunk.length() > 0) {
-                            submitChunk(chunk.toString().trim(), currentChunkLang, chunkIndex++);
+                            submitChunk(chunk.toString().trim(), currentChunkLang, chunkIndex++, title);
                         }
 
                         chunk.setLength(0);
@@ -226,8 +242,11 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
                         currentChunkLang = sentenceLang;
                     }
 
-                    // 🔥 NORMAL CHUNKING
+                    // normal chunking
                     ChunkResult result = addSentenceToChunk(
+                            chunkIndex,
+                            title,
+                            currentChunkLang,
                             chunk,
                             sentence,
                             chunkWords,
@@ -250,10 +269,10 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
                 }
             }
 
-            buffer.clear();
+//            buffer.clear();
         }
 
-        // 🔥 FINAL SENTENCE
+        // the final sentence...
         if (sentence.length() > 0) {
             if (inWord) sentenceWords++;
 
@@ -272,7 +291,7 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
 
             if (!sentenceLang.equals(currentChunkLang)) {
                 if (chunk.length() > 0) {
-                    submitChunk(chunk.toString().trim(), currentChunkLang, chunkIndex++);
+                    submitChunk(chunk.toString().trim(), currentChunkLang, chunkIndex++, title);
                 }
 
                 chunk.setLength(0);
@@ -281,6 +300,9 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
             }
 
             ChunkResult result = addSentenceToChunk(
+                    chunkIndex,
+                    title,
+                    currentChunkLang,
                     chunk,
                     sentence,
                     chunkWords,
@@ -293,17 +315,23 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
             chunkWords = result.chunkWords;
         }
 
-        // 🔥 FINAL CHUNK
+        // the final chunk
         if (chunk.length() > 0) {
-            submitChunk(chunk.toString().trim(), currentChunkLang, chunkIndex++);
+            submitChunk(chunk.toString().trim(), currentChunkLang, chunkIndex++, title);
         }
+    } catch (IOException e) {
+        System.out.println("chunkAndIndex: " + e.getMessage());
+        throw new IOException("Error IO during chunked indexing!");
     }
 }
 
     // =========================
-    // CHUNK LOGIC (with overlap + paragraph awareness)
+    // Chunk logic (with overlap + paragraph awareness)
     // =========================
     private ChunkResult addSentenceToChunk(
+            int chunkIndex,
+            String title,
+            String currentChunkLanguage,
             StringBuilder chunk,
             StringBuilder sentence,
             int chunkWords,
@@ -321,7 +349,7 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
 
             // finalize current chunk if valid
             if (chunkWords >= minWords) {
-                submitChunk(chunk.toString().trim());
+                submitChunk(chunk.toString().trim(), currentChunkLanguage, chunkIndex++, title);
             }
 
             chunk.setLength(0);
@@ -335,7 +363,11 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
         }
     }
 
+//    todo introduce overlap to current implementation
     private void finalizeChunk(
+            String currentChunkLanguage,
+            int chunkIndex,
+            String title,
             StringBuilder chunk,
             int chunkWords,
             int minWords,
@@ -348,7 +380,7 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
         String finalChunk = chunk.toString().trim();
 
         if (chunkWords >= minWords) {
-            submitChunk(finalChunk);
+            submitChunk(finalChunk, currentChunkLanguage, chunkIndex++, title);
         }
 
         // OVERLAP LOGIC (RAG improvement)
@@ -389,14 +421,14 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
 //        bulkService.submit(doc);
 //    }
 
-    private void submitChunk(String chunkText, String language, int chunkIndex) {
+    private void submitChunk(String chunkText, String language, int chunkIndex, String title) {
 
         BookIndex doc = new BookIndex();
 
         doc.setBookId(bookId);
         doc.setTitle(title);
         doc.setChunkIndex(chunkIndex);
-        doc.setDatabaseISBN(isbn);
+//        doc.setDatabaseISBN(isbn);
 
         switch (language) {
             case "SR" -> doc.setContentSr(chunkText);
@@ -407,10 +439,13 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
             case "ES" -> doc.setContentEs(chunkText);
             case "PT" -> doc.setContentPt(chunkText);
             case "UK" -> doc.setContentUk(chunkText);
-            default -> doc.setContentEn(chunkText);
+            case "EN" -> doc.setContentEn(chunkText);
+            default -> doc.setContent(chunkText);
         }
 
-        bulkService.submit(doc);
+        doc.setChunkLanguage(language);
+
+        bulkIndexingService.submit(doc);
     }
 
 
@@ -484,5 +519,14 @@ public void chunkAndIndex(Path file, Language lang, int minWords, int maxWords) 
             this.chunkWords = c;
             this.paragraphWords = p;
         }
+    }
+
+    private String detectLanguage(String text) {
+        var detectedLanguage = languageDetector.detect(text).getLanguage().toUpperCase();
+        if (detectedLanguage.equals("HR")) {
+            detectedLanguage = "SR";
+        }
+
+        return detectedLanguage;
     }
 }
