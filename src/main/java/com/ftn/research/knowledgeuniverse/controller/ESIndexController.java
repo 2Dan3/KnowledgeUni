@@ -28,7 +28,7 @@ public class ESIndexController {
     public BookDocumentFileResponseDTO addDocumentFile(@ModelAttribute BookDocumentFileDTO documentFile) throws IOException {
 
         // Store the PDF file
-        var pdfServerFilename = indexingService.indexDocument(documentFile.file());
+        var pdfServerFilename = indexingService.indexDocument(documentFile);
 
         // Optionally store preview image if provided
         MultipartFile previewImage = documentFile.previewImage(); // new optional field

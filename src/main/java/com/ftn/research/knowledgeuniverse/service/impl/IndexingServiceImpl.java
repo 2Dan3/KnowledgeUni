@@ -1,16 +1,16 @@
 package com.ftn.research.knowledgeuniverse.service.impl;
 
-import ai.djl.translate.TranslateException;
 import com.ftn.research.knowledgeuniverse.exceptionhandling.exception.LoadingException;
 import com.ftn.research.knowledgeuniverse.exceptionhandling.exception.StorageException;
+import com.ftn.research.knowledgeuniverse.model.dto.BookDocumentFileDTO;
 import com.ftn.research.knowledgeuniverse.model.entity.Book;
-import com.ftn.research.knowledgeuniverse.model.index.BookIndex;
+import com.ftn.research.knowledgeuniverse.model.entity.Genre;
 import com.ftn.research.knowledgeuniverse.repository.entity.BookRepository;
 import com.ftn.research.knowledgeuniverse.repository.index.BookIndexRepository;
 import com.ftn.research.knowledgeuniverse.service.BulkIndexingService;
 import com.ftn.research.knowledgeuniverse.service.FileService;
+import com.ftn.research.knowledgeuniverse.service.GenreService;
 import com.ftn.research.knowledgeuniverse.service.IndexingService;
-import com.ftn.research.knowledgeuniverse.service.impl.EmbeddingService;
 import com.ftn.research.knowledgeuniverse.util.RAGStreamingChunker;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -44,6 +45,8 @@ public class IndexingServiceImpl implements IndexingService {
     private final EmbeddingService embeddingService;
 
     private final BulkIndexingService bulkIndexingService;
+
+    private final GenreService genreService;
 
 //    @Override
 //    @Transactional
@@ -107,7 +110,9 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     @Transactional
-    public String indexDocument(MultipartFile documentFile) throws IOException {
+    public String indexDocument(BookDocumentFileDTO bookDocumentFileDTO) throws IOException {
+
+        var documentFile = bookDocumentFileDTO.file();
 
         var book = new Book();
 
@@ -122,6 +127,15 @@ public class IndexingServiceImpl implements IndexingService {
         String serverFilename = fileService.store(documentFile, UUID.randomUUID().toString());
         book.setServerFilename(serverFilename);
         book.setMimeType(detectMimeType(documentFile));
+
+//        setting genres assigned upon creation
+        for (Long genreId : bookDocumentFileDTO.genreIds()) {
+            Optional<Genre> foundGenre = genreService.findById(genreId);
+            if (foundGenre.isEmpty())
+                continue;
+
+            book.getGenres().add(foundGenre.get());
+        }
 
         var saved = bookRepository.save(book);
 

@@ -15,7 +15,7 @@ public class SearchController {
 
     private final SearchService searchService;
 
-    @PostMapping("/simple")
+    @PostMapping("/simple") // todo from DB, return book genres & main language with this
     public Page<BookIndex> simpleSearch(@RequestParam Boolean isKnn,
                                         @RequestBody SearchQueryDTO simpleSearchQuery,
                                         Pageable pageable) {
